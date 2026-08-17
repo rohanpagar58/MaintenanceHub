@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SocietySlip — Company Login</title>
+  <meta name="description" content="Secure login portal for SocietySlip company administrators." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #6366f1;
+      --primary-h: #818cf8;
+      --accent:    #a78bfa;
+      --bg-dark:   #0b0d1a;
+      --bg-card:   rgba(255,255,255,0.06);
+      --border:    rgba(255,255,255,0.12);
+      --text:      #e2e8f0;
+      --muted:     #94a3b8;
+      --error:     #f87171;
+      --success:   #34d399;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ── Animated gradient orbs background ── */
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(99,102,241,.35) 0%, transparent 60%),
+                  radial-gradient(ellipse 60% 70% at 80% 80%, rgba(167,139,250,.25) 0%, transparent 60%),
+                  radial-gradient(ellipse 50% 50% at 50% 50%, rgba(11,13,26,1) 0%, #090b17 100%);
+    }
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: .55; animation: drift 12s ease-in-out infinite alternate;
+    }
+    .orb1 { width: 420px; height: 420px; background: #6366f1; top: -120px; left: -100px; animation-delay: 0s; }
+    .orb2 { width: 320px; height: 320px; background: #a78bfa; bottom: -80px; right: -60px; animation-delay: -4s; }
+    .orb3 { width: 250px; height: 250px; background: #38bdf8; top: 55%; left: 60%; animation-delay: -8s; }
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(30px, 20px) scale(1.08); }
+    }
+
+    /* ── Grid overlay ── */
+    .grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ── Center wrapper ── */
+    .wrapper {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 100%; max-width: 440px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.75rem 2.5rem;
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      box-shadow: 0 32px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.05) inset;
+      animation: slideUp .55s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(32px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Logo / header ── */
+    .logo {
+      display: flex; align-items: center; gap: .65rem; margin-bottom: 2rem;
+    }
+    .logo-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; box-shadow: 0 8px 24px rgba(99,102,241,.45);
+    }
+    .logo-text { font-size: 1.3rem; font-weight: 700; letter-spacing: -.02em; }
+    .logo-text span { color: var(--accent); }
+
+    h1 { font-size: 1.65rem; font-weight: 700; letter-spacing: -.03em; margin-bottom: .4rem; }
+    .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 1.25rem; }
+    label {
+      display: block; font-size: .8rem; font-weight: 500;
+      color: var(--muted); margin-bottom: .5rem; letter-spacing: .04em; text-transform: uppercase;
+    }
+    .input-wrap { position: relative; }
+    .input-wrap svg {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      width: 18px; height: 18px; color: var(--muted); pointer-events: none;
+      transition: color .2s;
+    }
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .85rem 1rem .85rem 2.75rem;
+      font-size: .95rem; color: var(--text); font-family: inherit;
+      outline: none;
+      transition: border-color .25s, box-shadow .25s, background .25s;
+    }
+    input[type="email"]:focus, input[type="password"]:focus {
+      border-color: var(--primary);
+      background: rgba(99,102,241,.08);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.2);
+    }
+    input[type="email"]:focus + svg,
+    input[type="password"]:focus + svg { color: var(--primary-h); }
+    .input-wrap input:focus ~ svg { color: var(--primary-h); }
+
+    /* ── Toggle password ── */
+    .toggle-pw {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 0;
+      color: var(--muted); transition: color .2s;
+    }
+    .toggle-pw:hover { color: var(--text); }
+    .toggle-pw svg { width: 18px; height: 18px; }
+
+    /* ── Submit button ── */
+    .btn-login {
+      width: 100%; margin-top: .75rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: none; border-radius: 12px;
+      padding: .95rem 1rem;
+      font-size: 1rem; font-weight: 600; color: #fff;
+      cursor: pointer; letter-spacing: .02em;
+      position: relative; overflow: hidden;
+      transition: transform .18s, box-shadow .18s, filter .18s;
+      box-shadow: 0 8px 28px rgba(99,102,241,.45);
+    }
+    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(99,102,241,.55); filter: brightness(1.08); }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to right, transparent 0%, rgba(255,255,255,.18) 50%, transparent 100%);
+      transform: translateX(-100%);
+      transition: transform .6s ease;
+    }
+    .btn-login:hover::after { transform: translateX(100%); }
+
+    /* ── Spinner inside button ── */
+    .btn-login .spinner {
+      display: none; width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+      border-radius: 50%; animation: spin .7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-login.loading .btn-text { display: none; }
+    .btn-login.loading .spinner { display: block; }
+
+    /* ── Alert messages ── */
+    .alert {
+      display: none; align-items: center; gap: .6rem;
+      padding: .85rem 1rem; border-radius: 10px;
+      font-size: .88rem; font-weight: 500; margin-bottom: 1.2rem;
+      animation: fadeIn .3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    .alert.show { display: flex; }
+    .alert-error  { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.3); color: var(--error); }
+    .alert-success { background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.3); color: var(--success); }
+    .alert svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex; align-items: center; gap: 1rem;
+      color: var(--muted); font-size: .8rem; margin: 1.5rem 0 .5rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .footer-note {
+      text-align: center; color: var(--muted); font-size: .82rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+  <div class="grid"></div>
+
+  <div class="wrapper">
+    <div class="card">
+
+      <!-- Logo -->
+      <div class="logo">
+        <div class="logo-icon">🏢</div>
+        <div class="logo-text">Society<span>Slip</span></div>
+      </div>
+
+      <!-- Heading -->
+      <h1>Welcome back</h1>
+      <p class="subtitle">Sign in to your company account to continue.</p>
+
+      <!-- Alerts -->
+      <div class="alert alert-error" id="alertError">
+        <!-- Error icon -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="alertErrorMsg">Invalid email or password.</span>
+      </div>
+      <div class="alert alert-success" id="alertSuccess">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span id="alertSuccessMsg">Login successful! Redirecting…</span>
+      </div>
+
+      <!-- Form -->
+      <form id="loginForm" novalidate>
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <div class="input-wrap">
+            <input
+              type="email" id="email" name="email"
+              placeholder="company@example.com"
+              autocomplete="username" required
+            />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input
+              type="password" id="password" name="password"
+              placeholder="••••••••"
+              autocomplete="current-password" required
+            />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <button type="button" class="toggle-pw" id="togglePw" aria-label="Show/hide password">
+              <!-- Eye icon (visible) -->
+              <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <!-- Eye-off icon (hidden by default) -->
+              <svg id="eyeOff" style="display:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login" id="submitBtn">
+          <span class="btn-text">Sign In</span>
+          <div class="spinner"></div>
+        </button>
+      </form>
+
+      <div class="divider">or</div>
+      <p class="footer-note">Contact your administrator if you need access.</p>
+
+    </div>
+  </div>
+
+  <script>
+    // ── Toggle password visibility ──
+    const togglePw = document.getElementById('togglePw');
+    const pwInput  = document.getElementById('password');
+    const eyeOpen  = document.getElementById('eyeOpen');
+    const eyeOff   = document.getElementById('eyeOff');
+    togglePw.addEventListener('click', () => {
+      const show = pwInput.type === 'password';
+      pwInput.type = show ? 'text' : 'password';
+      eyeOpen.style.display = show ? 'none'  : '';
+      eyeOff.style.display  = show ? ''      : 'none';
+    });
+
+    // ── Form submission ──
+    const form       = document.getElementById('loginForm');
+    const submitBtn  = document.getElementById('submitBtn');
+    const alertError = document.getElementById('alertError');
+    const alertOk    = document.getElementById('alertSuccess');
+    const errMsg     = document.getElementById('alertErrorMsg');
+
+    function showError(msg) {
+      alertError.classList.add('show');
+      alertOk.classList.remove('show');
+      errMsg.textContent = msg;
+    }
+    function showSuccess(msg) {
+      alertOk.classList.add('show');
+      alertError.classList.remove('show');
+      document.getElementById('alertSuccessMsg').textContent = msg;
+    }
+    function hideAlerts() {
+      alertError.classList.remove('show');
+      alertOk.classList.remove('show');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlerts();
+
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) { showError('Please fill in all fields.'); return; }
+
+      // Loading state
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+
+      try {
+        const res = await fetch('/auth/login/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        let data = {};
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        }
+
+        if (res.ok && data.success) {
+          showSuccess(data.message || 'Login successful! Redirecting…');
+          setTimeout(() => { window.location.href = data.redirect || '/auth/register-apartment/'; }, 1200);
+        } else {
+          showError(data.error || `Server error (${res.status}). Please try again.`);
+        }
+      } catch (err) {
+        showError('Network error. Unable to reach server.');
+      } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Clear alerts on input
+    ['email','password'].forEach(id => {
+      document.getElementById(id).addEventListener('input', hideAlerts);
+    });
+  </script>
+</body>
+</html>

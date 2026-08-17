@@ -1,0 +1,45 @@
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment Variables & Secrets
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django & Database
+db.sqlite3
+db.sqlite3-journal
+data/
+media/
+staticfiles/
+
+# Logs & Temporary Files
+*.log
+logs/
+*.tmp
+*.bak
+
+# IDEs and Code Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# Operating System Files
+Thumbs.db
+desktop.ini
+.DS_Store
+ehthumbs.db
