@@ -1,0 +1,201 @@
+{% extends 'base/base_user.html' %}
+{% block title %}Add Member — SocietySlip{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ── Page container ── */
+  .member-page {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    animation: slideUp .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .page-icon {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; margin: 0 auto 1rem;
+    box-shadow: 0 12px 32px rgba(99,102,241,.4);
+  }
+  .page-header h1 {
+    font-size: 1.7rem; font-weight: 800; letter-spacing: -.03em;
+    margin-bottom: .3rem;
+  }
+  .page-header h1 span { color: var(--primary-h); }
+  .page-header p { color: var(--muted); font-size: .9rem; }
+
+  /* ── Card ── */
+  .form-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    animation: slideUp .5s .08s cubic-bezier(.16,1,.3,1) both;
+  }
+
+  /* ── Fields ── */
+  .field { margin-bottom: 1.25rem; }
+  .field label {
+    display: block; font-size: .78rem; font-weight: 700;
+    letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: .5rem;
+  }
+  .field input {
+    width: 100%; padding: .75rem 1rem;
+    background: rgba(255,255,255,.05);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--text); font-size: .95rem; font-family: inherit;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .field input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.2);
+  }
+  .field input::placeholder { color: var(--muted); }
+
+  /* ── Submit btn ── */
+  .btn-submit {
+    width: 100%; padding: .85rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border: none; border-radius: 10px;
+    color: #fff; font-size: 1rem; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 6px 20px rgba(99,102,241,.4);
+    transition: opacity .2s, transform .15s;
+    margin-top: .5rem;
+  }
+  .btn-submit:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-submit:active { transform: none; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999;
+    padding: .75rem 1.25rem; border-radius: 12px;
+    font-size: .88rem; font-weight: 600;
+    display: flex; align-items: center; gap: .5rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    transform: translateY(80px); opacity: 0;
+    transition: transform .3s cubic-bezier(.16,1,.3,1), opacity .3s;
+  }
+  .toast.show { transform: none; opacity: 1; }
+  .toast.success { background: rgba(52,211,153,.18); border: 1px solid rgba(52,211,153,.4); color: var(--green); }
+  .toast.error   { background: rgba(248,113,113,.15); border: 1px solid rgba(248,113,113,.4); color: var(--error); }
+
+  /* ── Back link ── */
+  .back-link {
+    display: inline-flex; align-items: center; gap: .4rem;
+    color: var(--muted); font-size: .85rem; font-weight: 500;
+    text-decoration: none; margin-bottom: 1.5rem;
+    transition: color .2s;
+  }
+  .back-link:hover { color: var(--primary-h); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="member-page">
+
+  <a class="back-link" href="/auth/user/home/">
+    ← Back to Dashboard
+  </a>
+
+  <div class="page-header">
+    <div class="page-icon">👤</div>
+    <h1>Add <span>Member</span></h1>
+    <p>Register a new flat member for {{ society_name }}</p>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="toast show {{ msg.tags }}" id="serverToast">
+        {% if msg.tags == 'success' %}✅{% else %}❌{% endif %} {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="form-card">
+    <form id="addMemberForm" method="POST" action="/auth/user/members/save/">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="member_name">Member Name</label>
+        <input type="text" id="member_name" name="name"
+               placeholder="e.g. Raj Sharma"
+               required autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="flat_number">Flat Number</label>
+        <input type="text" id="flat_number" name="flat_number"
+               placeholder="e.g. A-101"
+               required autocomplete="off" />
+      </div>
+
+      <button type="submit" class="btn-submit">
+        ➕ Add Member
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Toast for JS feedback -->
+<div class="toast" id="jsToast"></div>
+
+<script>
+  // Auto-hide server-side toast after 3s
+  const st = document.getElementById('serverToast');
+  if (st) setTimeout(() => st.classList.remove('show'), 3000);
+
+  // Client-side toast helper
+  function showToast(msg, type) {
+    const t = document.getElementById('jsToast');
+    t.textContent = msg;
+    t.className = `toast show ${type}`;
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  // AJAX submit
+  document.getElementById('addMemberForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('.btn-submit');
+    const original = btn.textContent;
+    btn.textContent = 'Saving…';
+    btn.disabled = true;
+
+    const fd = new FormData(this);
+    try {
+      const res = await fetch(this.action, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': fd.get('csrfmiddlewaretoken') },
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`✅ Member added! ID: #${data.member_id}`, 'success');
+        this.reset();
+      } else {
+        showToast('❌ ' + (data.error || 'Something went wrong.'), 'error');
+      }
+    } catch {
+      showToast('❌ Network error. Please try again.', 'error');
+    } finally {
+      btn.textContent = original;
+      btn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}

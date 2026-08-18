@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}SocietySlip{% endblock %}</title>
+  <meta name="description" content="Society dashboard for your apartment." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary:     #6366f1;
+      --primary-h:   #818cf8;
+      --accent:      #a78bfa;
+      --green:       #34d399;
+      --green-bg:    rgba(52, 211, 153, 0.12);
+      --warning:     #fbbf24;
+      --bg-dark:     #0b0d1a;
+      --bg-card:     rgba(255,255,255,0.04);
+      --border:      rgba(255,255,255,0.09);
+      --border-light:rgba(255,255,255,0.15);
+      --text:        #f1f5f9;
+      --muted:       #94a3b8;
+      --error:       #f87171;
+    }
+
+    html, body {
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+    }
+
+    /* ── Animated background ── */
+    .bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse 70% 55% at 5% 5%,   rgba(99,102,241,.22) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 55% at 90% 85%, rgba(167,139,250,.16) 0%, transparent 65%);
+    }
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(90px); opacity: .4; animation: drift 14s ease-in-out infinite alternate;
+    }
+    .orb1 { width: 400px; height: 400px; background: #6366f1; top: -80px; left: -60px; }
+    .orb2 { width: 280px; height: 280px; background: #a78bfa; bottom: -40px; right: -30px; animation-delay:-5s; }
+    @keyframes drift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(20px,15px) scale(1.06); }
+    }
+    .grid-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(11,13,26,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: .6rem;
+      font-size: 1.1rem; font-weight: 700; text-decoration: none; color: var(--text);
+    }
+    .nav-brand-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; box-shadow: 0 4px 16px rgba(99,102,241,.4);
+    }
+    .nav-brand span { color: var(--accent); }
+    .nav-right { display: flex; align-items: center; gap: .75rem; }
+    .nav-badge {
+      background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3);
+      color: var(--primary-h); padding: .3rem .75rem; border-radius: 20px;
+      font-size: .78rem; font-weight: 600;
+    }
+    .btn-logout {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.25);
+      color: var(--error); padding: .4rem .9rem; border-radius: 8px;
+      font-size: .8rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-logout:hover { background: rgba(248,113,113,.2); border-color: rgba(248,113,113,.5); }
+    .btn-logout svg { width: 14px; height: 14px; }
+
+    /* ── Page wrap ── */
+    .page {
+      position: relative; z-index: 1;
+      max-width: 900px; margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 1.5rem 1rem; }
+      .navbar { padding: 0 1rem; }
+      .nav-badge { display: none; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <div class="bg">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+  </div>
+  <div class="grid-bg"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+      <a class="nav-brand" href="#">
+        <div class="nav-brand-icon">🏢</div>
+        Society<span>Slip</span>
+      </a>
+      <a class="nav-badge" href="/auth/user/home/" style="text-decoration: none; background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text);">
+        🏠 Home
+      </a>
+    </div>
+    <div class="nav-right">
+      <a class="nav-badge" href="/auth/user/profile/" style="text-decoration: none; background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text);">
+        👤 Profile
+      </a>
+      <a class="btn-logout" href="/auth/logout/">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Logout
+      </a>
+    </div>
+  </nav>
+
+  <div class="page">
+    {% block content %}
+    {% endblock %}
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

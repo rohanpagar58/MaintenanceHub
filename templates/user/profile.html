@@ -1,0 +1,202 @@
+{% extends 'base/base_user.html' %}
+{% block title %}Profile — {{ society_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .profile-page { max-width: 680px; margin: 0 auto; }
+
+  /* Header */
+  .profile-header {
+    text-align: center; margin-bottom: 2.25rem;
+    animation: slideUp .5s cubic-bezier(.16,1,.3,1) both;
+  }
+  .profile-avatar {
+    width: 80px; height: 80px; border-radius: 22px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem; margin: 0 auto 1.1rem;
+    box-shadow: 0 12px 36px rgba(99,102,241,.4);
+  }
+  .profile-header h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: -.03em; margin-bottom: .25rem; }
+  .profile-header h1 span { color: var(--primary-h); }
+  .profile-header p { color: var(--muted); font-size: .88rem; }
+
+  /* Cards */
+  .profile-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 1.75rem;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.3);
+    margin-bottom: 1.25rem;
+    animation: slideUp .5s .08s cubic-bezier(.16,1,.3,1) both;
+  }
+  .profile-card + .profile-card { animation-delay: .16s; }
+  .card-title {
+    font-size: .95rem; font-weight: 700;
+    display: flex; align-items: center; gap: .6rem;
+    margin-bottom: 1.25rem; padding-bottom: .85rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-title-icon {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center; font-size: .95rem;
+  }
+
+  /* Info grid */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem 1.5rem; }
+  .info-item { display: flex; flex-direction: column; gap: .2rem; }
+  .info-label {
+    font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .info-value { font-size: .92rem; font-weight: 500; word-break: break-word; }
+  .info-value a { color: var(--primary-h); text-decoration: none; }
+  .info-value a:hover { text-decoration: underline; }
+
+  /* Subscription badge */
+  .sub-badge {
+    display: inline-flex; align-items: center; gap: .4rem;
+    padding: .28rem .7rem; border-radius: 7px; font-size: .8rem; font-weight: 600;
+  }
+  .sub-badge.active   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,.3); }
+  .sub-badge.expired  { background: rgba(248,113,113,.12); color: var(--error); border: 1px solid rgba(248,113,113,.3); }
+  .sub-badge.expiring { background: rgba(251,191,36,.12); color: var(--warning); border: 1px solid rgba(251,191,36,.3); }
+
+  /* Contact rows */
+  .contact-row {
+    display: flex; align-items: center; gap: .85rem;
+    padding: .75rem 0;
+  }
+  .contact-row + .contact-row { border-top: 1px solid var(--border); }
+  .contact-icon {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+  }
+  .ci-email { background: rgba(99,102,241,.15); }
+  .ci-phone { background: rgba(52,211,153,.12); }
+  .ci-loc   { background: rgba(167,139,250,.12); }
+  .contact-lbl { font-size: .68rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .1rem; }
+  .contact-val { font-size: .9rem; font-weight: 500; }
+  .contact-val a { color: var(--primary-h); text-decoration: none; }
+  .contact-val a:hover { text-decoration: underline; }
+
+  @media (max-width: 540px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .profile-card { padding: 1.25rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+
+  <div class="profile-header">
+    <div class="profile-avatar">🏛️</div>
+    <h1><span>{{ society_name }}{% if apartment_block %} - {{ apartment_block }}{% endif %}</span></h1>
+    <p>Society Profile</p>
+  </div>
+
+  <!-- Society Details -->
+  <div class="profile-card">
+    <div class="card-title">
+      <div class="card-title-icon">🏢</div>
+      Society Details
+    </div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">Society Name</div>
+        <div class="info-value">{{ society_name }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Block / Wing</div>
+        <div class="info-value">{{ apartment_block|default:"—" }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Total Flats</div>
+        <div class="info-value">{{ total_flats }}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Subscription Valid Upto</div>
+        <div class="info-value">
+          <span class="sub-badge" id="subBadge">{{ subscription_valid_upto|default:"N/A" }}</span>
+        </div>
+      </div>
+      {% if address %}
+      <div class="info-item" style="grid-column: 1 / -1;">
+        <div class="info-label">Address</div>
+        <div class="info-value">{{ address }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Chairman Contact -->
+  <div class="profile-card">
+    <div class="card-title">
+      <div class="card-title-icon">👤</div>
+      Chairman Contact
+    </div>
+
+    {% if chairman_email %}
+    <div class="contact-row">
+      <div class="contact-icon ci-email">📧</div>
+      <div>
+        <div class="contact-lbl">Email</div>
+        <div class="contact-val"><a href="mailto:{{ chairman_email }}">{{ chairman_email }}</a></div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if chairman_mobile %}
+    <div class="contact-row">
+      <div class="contact-icon ci-phone">📞</div>
+      <div>
+        <div class="contact-lbl">Mobile</div>
+        <div class="contact-val"><a href="tel:{{ chairman_mobile }}">{{ chairman_mobile }}</a></div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if address %}
+    <div class="contact-row">
+      <div class="contact-icon ci-loc">📍</div>
+      <div>
+        <div class="contact-lbl">Address</div>
+        <div class="contact-val">{{ address }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if not chairman_email and not chairman_mobile and not address %}
+    <p style="color:var(--muted); font-size:.88rem;">No contact information available.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+  const subDateStr = "{{ subscription_valid_upto }}";
+  const subBadge   = document.getElementById('subBadge');
+  if (subDateStr && subDateStr !== 'N/A') {
+    const today  = new Date(); today.setHours(0,0,0,0);
+    const subEnd = new Date(subDateStr);
+    const diff   = Math.ceil((subEnd - today) / (1000 * 60 * 60 * 24));
+    if (diff < 0) {
+      subBadge.className = 'sub-badge expired';
+      subBadge.textContent = `Expired (${subDateStr})`;
+    } else if (diff <= 30) {
+      subBadge.className = 'sub-badge expiring';
+      subBadge.textContent = `${subDateStr} ⚠ Expiring Soon`;
+    } else {
+      subBadge.className = 'sub-badge active';
+      subBadge.textContent = subDateStr;
+    }
+  }
+</script>
+{% endblock %}

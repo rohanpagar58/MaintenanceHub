@@ -1,538 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Register & Manage Apartments — SocietySlip</title>
-  <meta name="description" content="Register and manage society apartments in real-time. Super User access." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+{% extends 'base/base.html' %}
+{% block content %}
 
-    :root {
-      --primary:      #6366f1;
-      --primary-h:    #818cf8;
-      --accent:       #a78bfa;
-      --accent-glow:  rgba(167, 139, 250, 0.35);
-      --green:        #34d399;
-      --green-bg:     rgba(52, 211, 153, 0.12);
-      --bg-dark:      #0b0d1a;
-      --bg-card:      rgba(255, 255, 255, 0.04);
-      --bg-card-hover:rgba(255, 255, 255, 0.07);
-      --border:       rgba(255, 255, 255, 0.09);
-      --border-light: rgba(255, 255, 255, 0.15);
-      --text:         #f1f5f9;
-      --muted:        #94a3b8;
-      --error:        #f87171;
-      --error-bg:     rgba(248, 113, 113, 0.12);
-      --warning:      #fbbf24;
-      --sidebar-w:    260px;
-    }
-
-    html, body {
-      min-height: 100vh;
-      font-family: 'Inter', sans-serif;
-      background: var(--bg-dark);
-      color: var(--text);
-      overflow-x: hidden;
-    }
-
-    /* ── Background animation ── */
-    .bg {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background: radial-gradient(ellipse 80% 60% at 10% 5%,  rgba(99,102,241,.24) 0%, transparent 60%),
-                  radial-gradient(ellipse 60% 60% at 85% 85%, rgba(167,139,250,.18) 0%, transparent 60%);
-    }
-    .orb {
-      position: absolute; border-radius: 50%;
-      filter: blur(90px); opacity: .45; animation: drift 14s ease-in-out infinite alternate;
-    }
-    .orb1 { width: 420px; height: 420px; background: #6366f1; top: -100px; left: -80px; }
-    .orb2 { width: 320px; height: 320px; background: #a78bfa; bottom: -60px; right: -40px; animation-delay: -5s; }
-    @keyframes drift {
-      from { transform: translate(0,0) scale(1); }
-      to   { transform: translate(25px,18px) scale(1.07); }
-    }
-
-    .grid-bg {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
-      background-size: 48px 48px;
-    }
-
-    /* ── Layout ── */
-    .layout { position: relative; z-index: 1; display: flex; min-height: 100vh; }
-
-    /* ── Sidebar ── */
-    .sidebar {
-      width: var(--sidebar-w); flex-shrink: 0;
-      background: rgba(15, 17, 32, 0.75);
-      border-right: 1px solid var(--border);
-      backdrop-filter: blur(24px);
-      display: flex; flex-direction: column;
-      padding: 2rem 1.25rem;
-      position: fixed; top: 0; left: 0; height: 100vh;
-      z-index: 10;
-    }
-    .sidebar-logo {
-      display: flex; align-items: center; gap: .65rem; margin-bottom: 2.5rem;
-    }
-    .sidebar-logo-icon {
-      width: 40px; height: 40px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; box-shadow: 0 6px 20px rgba(99,102,241,.4);
-    }
-    .sidebar-logo-text { font-size: 1.15rem; font-weight: 700; letter-spacing: -.02em; }
-    .sidebar-logo-text span { color: var(--accent); }
-
-    .sidebar-label {
-      font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: .75rem; padding-left: .5rem;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: .75rem;
-      padding: .7rem .9rem; border-radius: 10px;
-      font-size: .9rem; font-weight: 500; color: var(--muted);
-      text-decoration: none; cursor: pointer; border: none; background: none; width: 100%;
-      transition: background .2s, color .2s; margin-bottom: .25rem;
-    }
-    .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
-    .nav-item:hover  { background: rgba(255,255,255,.06); color: var(--text); }
-    .nav-item.active { background: rgba(99,102,241,.2); color: var(--primary-h); font-weight: 600; }
-    .nav-item.active svg { color: var(--primary-h); }
-
-    .sidebar-bottom {
-      margin-top: auto;
-      border-top: 1px solid var(--border); padding-top: 1.25rem;
-    }
-
-    /* ── Main Container ── */
-    .main {
-      margin-left: var(--sidebar-w);
-      flex: 1; padding: 2.5rem 3rem;
-      display: flex; flex-direction: column; max-width: 1550px;
-    }
-
-    /* ── Page header ── */
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;
-    }
-    .breadcrumb {
-      font-size: .8rem; color: var(--muted); margin-bottom: .4rem;
-      display: flex; align-items: center; gap: .4rem;
-    }
-    .breadcrumb span { color: var(--primary-h); }
-    h1 { font-size: 2rem; font-weight: 800; letter-spacing: -.03em; }
-    .page-subtitle { color: var(--muted); font-size: .9rem; margin-top: .2rem; }
-
-    .live-status-pill {
-      display: inline-flex; align-items: center; gap: .5rem;
-      background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.25);
-      border-radius: 30px; padding: .4rem .9rem; font-size: .8rem; font-weight: 600;
-      color: var(--green);
-    }
-    .pulse-dot {
-      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
-      box-shadow: 0 0 10px var(--green); animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
-    }
-
-    /* ── Live Stats Bar ── */
-    .stats-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.25rem; margin-bottom: 2rem;
-    }
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px; padding: 1.25rem 1.5rem;
-      backdrop-filter: blur(20px);
-      display: flex; align-items: center; gap: 1.25rem;
-      transition: transform .25s, border-color .25s, box-shadow .25s;
-    }
-    .stat-card:hover {
-      transform: translateY(-3px);
-      border-color: rgba(99, 102, 241, 0.3);
-      box-shadow: 0 12px 30px rgba(0,0,0,.3);
-    }
-    .stat-icon-wrap {
-      width: 48px; height: 48px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; flex-shrink: 0;
-    }
-    .stat-icon-1 { background: rgba(99, 102, 241, 0.15); color: var(--primary-h); border: 1px solid rgba(99, 102, 241, 0.3); }
-    .stat-icon-2 { background: rgba(167, 139, 250, 0.15); color: var(--accent); border: 1px solid rgba(167, 139, 250, 0.3); }
-    .stat-icon-3 { background: rgba(52, 211, 153, 0.15); color: var(--green); border: 1px solid rgba(52, 211, 153, 0.3); }
-    .stat-icon-4 { background: rgba(251, 191, 36, 0.15); color: var(--warning); border: 1px solid rgba(251, 191, 36, 0.3); }
-
-    .stat-info { display: flex; flex-direction: column; }
-    .stat-val { font-size: 1.6rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
-    .stat-lbl { font-size: .8rem; color: var(--muted); font-weight: 500; margin-top: .2rem; }
-
-    /* ── Content Grid (Form + List) ── */
-    .content-grid {
-      display: grid; grid-template-columns: 1fr; gap: 2rem;
-      align-items: start;
-    }
-    @media (max-width: 1200px) {
-      .content-grid { grid-template-columns: 1fr; }
-    }
-
-    /* ── Form Card ── */
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.75rem 2rem;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 24px 60px rgba(0,0,0,.4);
-      animation: slideUp .4s cubic-bezier(.16,1,.3,1) both;
-    }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: none; }
-    }
-
-    .card-title {
-      font-size: 1.1rem; font-weight: 700; margin-bottom: .3rem;
-      display: flex; align-items: center; gap: .6rem;
-    }
-    .card-title-icon {
-      width: 34px; height: 34px; border-radius: 9px;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-    }
-    .card-subtitle { color: var(--muted); font-size: .85rem; margin-bottom: 1.5rem; }
-
-    .form-group { display: flex; flex-direction: column; margin-bottom: 1.2rem; }
-    label {
-      font-size: .75rem; font-weight: 700; letter-spacing: .05em;
-      text-transform: uppercase; color: var(--muted); margin-bottom: .45rem;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .required { color: var(--error); margin-left: .2rem; }
-    .input-wrap { position: relative; }
-    .input-wrap svg.icon {
-      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-      width: 17px; height: 17px; color: var(--muted); pointer-events: none;
-      transition: color .2s;
-    }
-    .input-wrap .field-status {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      font-size: .8rem; font-weight: 600; display: none; align-items: center; gap: .3rem;
-    }
-    .field-status.valid { display: flex; color: var(--green); }
-    .field-status.invalid { display: flex; color: var(--error); }
-    .field-status.warning { display: flex; color: var(--warning); }
-
-    input[type="text"], input[type="email"], input[type="password"], select {
-      width: 100%;
-      background: rgba(255,255,255,.05);
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      padding: .8rem 1rem .8rem 2.6rem;
-      font-size: .9rem; color: var(--text); font-family: inherit;
-      outline: none;
-      transition: border-color .25s, box-shadow .25s, background .25s;
-    }
-    input[type="password"] { padding-right: 2.8rem; }
-    input[type="text"]:focus,
-    input[type="email"]:focus,
-    input[type="password"]:focus,
-    select:focus {
-      border-color: var(--primary);
-      background: rgba(99,102,241,.08);
-      box-shadow: 0 0 0 3px rgba(99,102,241,.18);
-    }
-    input.is-invalid { border-color: var(--error) !important; background: var(--error-bg) !important; }
-    input.is-valid   { border-color: var(--green) !important; background: var(--green-bg) !important; }
-    input::placeholder { color: var(--muted); }
-
-    /* ── Password toggle button ── */
-    .pwd-toggle {
-      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; cursor: pointer; padding: 4px;
-      color: var(--muted); display: flex; align-items: center;
-      transition: color .2s;
-    }
-    .pwd-toggle:hover { color: var(--text); }
-    .pwd-toggle svg { width: 17px; height: 17px; }
-
-    /* ── Inline Warning Banner ── */
-    .duplicate-warning {
-      display: none; align-items: center; gap: .6rem;
-      background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.3);
-      color: var(--warning); padding: .75rem 1rem; border-radius: 10px;
-      font-size: .8rem; font-weight: 500; margin-bottom: 1.2rem;
-    }
-    .duplicate-warning.show { display: flex; }
-
-    /* ── Buttons ── */
-    .btn-row { display: flex; gap: .75rem; margin-top: 1.5rem; justify-content: flex-end; }
-    .btn {
-      padding: .75rem 1.4rem; border-radius: 11px;
-      font-size: .88rem; font-weight: 600; cursor: pointer; border: none;
-      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-      transition: transform .18s, box-shadow .18s, background .18s, filter .18s;
-      text-decoration: none;
-    }
-    .btn-ghost {
-      background: transparent; border: 1px solid var(--border); color: var(--muted);
-    }
-    .btn-ghost:hover { border-color: rgba(255,255,255,.3); color: var(--text); background: rgba(255,255,255,.05); }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff;
-      box-shadow: 0 8px 24px rgba(99,102,241,.4); position: relative; overflow: hidden;
-      flex: 1;
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(99,102,241,.5); filter: brightness(1.07); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary .spinner {
-      display: none; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4);
-      border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite;
-    }
-    .btn-primary.loading .btn-text { display: none; }
-    .btn-primary.loading .spinner { display: inline-block; }
-
-    .btn-icon {
-      padding: .5rem; border-radius: 8px; border: 1px solid var(--border);
-      background: rgba(255,255,255,.03); color: var(--muted); cursor: pointer;
-      transition: background .2s, color .2s, border-color .2s;
-    }
-    .btn-icon:hover { background: rgba(255,255,255,.1); color: var(--text); border-color: rgba(255,255,255,.2); }
-    .btn-icon svg { width: 16px; height: 16px; display: block; }
-    .btn-danger { background: rgba(248, 113, 113, 0.15); border-color: rgba(248, 113, 113, 0.3); color: var(--error); }
-    .btn-danger:hover { background: rgba(248, 113, 113, 0.25); color: #fff; }
-
-    /* ── Right Panel: Directory List ── */
-    .directory-panel {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.75rem 2rem;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 24px 60px rgba(0,0,0,.4);
-      display: flex; flex-direction: column; gap: 1.25rem;
-    }
-
-    .directory-header {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 1rem; flex-wrap: wrap; padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .directory-title-wrap h2 { font-size: 1.2rem; font-weight: 700; }
-    .directory-title-wrap p { font-size: .82rem; color: var(--muted); margin-top: .15rem; }
-
-    .directory-actions { display: flex; align-items: center; gap: .75rem; }
-    .search-box { position: relative; min-width: 240px; }
-    .search-box input {
-      padding: .6rem 1rem .6rem 2.4rem; font-size: .85rem; border-radius: 10px;
-    }
-    .search-box svg {
-      position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
-      width: 15px; height: 15px; color: var(--muted); pointer-events: none;
-    }
-
-    .view-toggle {
-      display: flex; background: rgba(0,0,0,.3); padding: 3px; border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-    .view-btn {
-      padding: .4rem .65rem; border-radius: 7px; border: none; background: transparent;
-      color: var(--muted); cursor: pointer; transition: all .2s;
-    }
-    .view-btn.active { background: rgba(99,102,241,.25); color: var(--primary-h); }
-    .view-btn svg { width: 16px; height: 16px; display: block; }
-
-    /* ── Table View ── */
-    .table-responsive { overflow-x: auto; margin-top: .5rem; }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th {
-      font-size: .73rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-      color: var(--muted); padding: .85rem 1rem; border-bottom: 1px solid var(--border);
-    }
-    td {
-      padding: 1rem; font-size: .88rem; border-bottom: 1px solid rgba(255,255,255,.04);
-      vertical-align: middle; transition: background .15s;
-    }
-    tr:hover td { background: rgba(255,255,255,.02); }
-    tr.new-row { animation: highlightRow 2s ease-out; }
-    @keyframes highlightRow {
-      0% { background: rgba(99, 102, 241, 0.25); }
-      100% { background: transparent; }
-    }
-
-    .soc-badge {
-      display: inline-flex; align-items: center; gap: .4rem;
-      background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25);
-      color: var(--primary-h); padding: .25rem .6rem; border-radius: 8px;
-      font-family: monospace; font-size: .82rem; font-weight: 600;
-    }
-    .block-badge {
-      display: inline-block; background: rgba(255,255,255,.08); border: 1px solid var(--border);
-      padding: .2rem .55rem; border-radius: 6px; font-size: .8rem; font-weight: 600;
-    }
-
-    /* ── Grid View Cards ── */
-    .cards-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.25rem; margin-top: .5rem;
-    }
-    .apt-card {
-      background: rgba(255,255,255,.03); border: 1px solid var(--border);
-      border-radius: 14px; padding: 1.25rem; backdrop-filter: blur(10px);
-      transition: transform .2s, border-color .2s, box-shadow .2s;
-      position: relative; overflow: hidden;
-    }
-    .apt-card:hover {
-      transform: translateY(-3px); border-color: rgba(167, 139, 250, 0.3);
-      box-shadow: 0 10px 25px rgba(0,0,0,.3);
-    }
-    .apt-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
-    .apt-card-title { font-weight: 700; font-size: 1rem; color: var(--text); }
-    .apt-card-subtitle { font-size: .8rem; color: var(--muted); margin-top: .2rem; }
-    .apt-card-meta { display: flex; flex-direction: column; gap: .5rem; font-size: .82rem; margin-bottom: 1.2rem; }
-    .meta-item { display: flex; align-items: center; gap: .5rem; color: var(--muted); }
-    .meta-item svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
-    .apt-card-actions { display: flex; gap: .5rem; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: .8rem; }
-
-    /* ── Empty & Loading States ── */
-    .state-container {
-      text-align: center; padding: 3.5rem 1.5rem; color: var(--muted);
-      display: flex; flex-direction: column; align-items: center; gap: .8rem;
-    }
-    .state-icon { font-size: 2.8rem; margin-bottom: .2rem; opacity: .8; }
-    .state-title { font-size: 1.05rem; font-weight: 600; color: var(--text); }
-    .state-desc { font-size: .85rem; max-width: 320px; }
-
-    /* Skeleton loader */
-    .skeleton-tr td { padding: 1.2rem 1rem; }
-    .skeleton {
-      background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 75%);
-      background-size: 200% 100%; animation: loading 1.5s infinite;
-      border-radius: 6px; height: 16px;
-    }
-    @keyframes loading {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    /* ── Modals ── */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 100;
-      background: rgba(0,0,0,.7); backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center; padding: 1.5rem;
-      opacity: 0; pointer-events: none; transition: opacity .25s ease;
-    }
-    .modal-overlay.open { opacity: 1; pointer-events: auto; }
-    .modal-box {
-      background: #111425; border: 1px solid var(--border-light);
-      border-radius: 20px; padding: 2rem; max-width: 480px; width: 100%;
-      box-shadow: 0 30px 80px rgba(0,0,0,.6); transform: scale(.95);
-      transition: transform .25s cubic-bezier(.16,1,.3,1);
-    }
-    .modal-overlay.open .modal-box { transform: scale(1); }
-    .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: .5rem; }
-    .modal-desc { font-size: .88rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.5; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: .75rem; }
-
-    /* ── Toast Notifications ── */
-    .toast-container {
-      position: fixed; bottom: 1.75rem; right: 1.75rem; z-index: 200;
-      display: flex; flex-direction: column; gap: .75rem; pointer-events: none;
-    }
-    .toast {
-      background: rgba(17, 20, 37, 0.95); border: 1px solid var(--border-light);
-      backdrop-filter: blur(20px); border-radius: 12px; padding: .85rem 1.25rem;
-      display: flex; align-items: center; gap: .75rem; font-size: .88rem; font-weight: 500;
-      box-shadow: 0 16px 36px rgba(0,0,0,.5); pointer-events: auto;
-      animation: toastIn .3s cubic-bezier(.16,1,.3,1) forwards;
-      min-width: 280px; max-width: 400px;
-    }
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateY(20px) scale(.9); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .toast.toast-out { animation: toastOut .3s ease forwards; }
-    @keyframes toastOut {
-      to { opacity: 0; transform: translateY(10px) scale(.9); }
-    }
-    .toast-icon { width: 22px; height: 22px; flex-shrink: 0; }
-    .toast-success .toast-icon { color: var(--green); }
-    .toast-error .toast-icon   { color: var(--error); }
-    .toast-info .toast-icon    { color: var(--primary-h); }
-  </style>
-</head>
-<body>
-
-  <!-- Background Layer -->
-  <div class="bg">
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-  </div>
-  <div class="grid-bg"></div>
-
-  <div class="layout">
-
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <div class="sidebar-logo-icon">🏢</div>
-        <div class="sidebar-logo-text">Society<span>Slip</span></div>
-      </div>
-
-      <div class="sidebar-label">Navigation</div>
-
-      <a class="nav-item active" href="#" onclick="event.preventDefault(); showTab('dashboard');" id="navDashboardBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        Dashboard
-      </a>
-
-      <a class="nav-item" href="#" onclick="event.preventDefault(); showTab('register');" id="navRegisterBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <rect x="9" y="14" width="6" height="8"/>
-          <line x1="12" y1="9" x2="12" y2="9.01"/>
-        </svg>
-        Register Apartment
-      </a>
-
-      <div class="sidebar-bottom">
-        <a class="nav-item" href="/auth/logout/">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-          Logout
-        </a>
-      </div>
-    </aside>
-
-    <!-- ── Main Content ── -->
-    <main class="main">
 
       <!-- Page Header -->
       <div class="page-header">
-        <div>
-          <div class="breadcrumb">
-            Super User <span>/</span> Management
+        <div style="display: flex; gap: 1rem; align-items: flex-start;">
+          <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div>
+            <div class="breadcrumb">
+              Super User <span>/</span> Management
+            </div>
+            <h1>Register & Manage Apartments</h1>
+            <p class="page-subtitle">Register new societies and blocks with live real-time sync.</p>
           </div>
-          <h1>Register & Manage Apartments</h1>
-          <p class="page-subtitle">Register new societies and blocks with live real-time sync.</p>
         </div>
       </div>
 
@@ -546,17 +32,17 @@
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon-wrap stat-icon-2">🏛️</div>
+          <div class="stat-icon-wrap stat-icon-3">✅</div>
           <div class="stat-info">
-            <div class="stat-val" id="statSocieties">0</div>
-            <div class="stat-lbl">Unique Societies</div>
+            <div class="stat-val" id="statActiveApts">0</div>
+            <div class="stat-lbl">Active Apartments</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-icon-wrap stat-icon-3">📧</div>
+          <div class="stat-icon-wrap stat-icon-4" style="background: rgba(248, 113, 113, 0.15); color: var(--error); border-color: rgba(248, 113, 113, 0.3);">❌</div>
           <div class="stat-info">
-            <div class="stat-val" id="statChairmen">0</div>
-            <div class="stat-lbl">Active Chairmen</div>
+            <div class="stat-val" id="statInactiveApts">0</div>
+            <div class="stat-lbl">Inactive Apartments</div>
           </div>
         </div>
       </div>
@@ -566,7 +52,7 @@
       <div class="content-grid">
 
         <!-- Left: Form -->
-        <div class="card" id="tabRegister" style="display: none; max-width: 600px; margin: 0 auto;">
+        <div class="card" id="tabRegister" style="display: none; max-width: 780px; margin: 0 auto;">
           <div class="card-title">
             <div class="card-title-icon">🏠</div>
             Register Apartment
@@ -585,87 +71,155 @@
           <form id="registerForm" novalidate>
             {% csrf_token %}
 
-            <!-- Society Name with Datalist Autocomplete -->
-            <div class="form-group">
-              <label for="society_name">Society / Company Name <span class="required">*</span></label>
-              <div class="input-wrap">
-                <input type="text" id="society_name" name="society_name" placeholder="e.g. Green Valley Society" list="society_suggestions" autocomplete="off" required />
-                <datalist id="society_suggestions"></datalist>
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                </svg>
-                <div class="field-status" id="societyStatus"></div>
+            <!-- Row 1: Society Name & Block -->
+            <div class="form-grid-row">
+              <!-- Society Name with Datalist Autocomplete -->
+              <div class="form-group">
+                <label for="society_name">Society Name <span class="required">*</span></label>
+                <div class="input-wrap">
+                  <input type="text" id="society_name" name="society_name" placeholder="e.g. Green Valley Society" list="society_suggestions" autocomplete="off" required />
+                  <datalist id="society_suggestions"></datalist>
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  </svg>
+                  <div class="field-status" id="societyStatus"></div>
+                </div>
+              </div>
+
+              <!-- Block / Wing (Optional) -->
+              <div class="form-group">
+                <label for="block">Block / Wing / Tower <span style="color:var(--muted);font-size:.8em;font-weight:400;">(optional)</span></label>
+                <div class="input-wrap">
+                  <input type="text" id="block" name="block" placeholder="e.g. Block A, Tower 1" autocomplete="off" />
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>
+                  </svg>
+                  <div class="field-status" id="blockStatus"></div>
+                </div>
               </div>
             </div>
 
-            <!-- Block / Wing (Optional) -->
+            <!-- Row 2: Address (full width) -->
             <div class="form-group">
-              <label for="block">Block / Wing / Tower <span style="color:var(--muted);font-size:.8em;font-weight:400;">(optional)</span></label>
+              <label for="address">Address <span style="color:var(--muted);font-size:.8em;font-weight:400;">(optional)</span></label>
               <div class="input-wrap">
-                <input type="text" id="block" name="block" placeholder="e.g. Block A, Tower 1" autocomplete="off" />
+                <input type="text" id="address" name="address" placeholder="e.g. 123 Main Street, Sector 4, Mumbai" autocomplete="off" style="padding-top: 1rem; padding-bottom: 1rem;" />
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
-                <div class="field-status" id="blockStatus"></div>
+                <div class="field-status" id="addressStatus"></div>
               </div>
             </div>
 
-            <!-- Chairman Email -->
-            <div class="form-group">
-              <label for="chairman_email">Chairman Email <span class="required">*</span></label>
-              <div class="input-wrap">
-                <input type="email" id="chairman_email" name="chairman_email" placeholder="chairman@example.com" autocomplete="off" required />
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                <div class="field-status" id="emailStatus"></div>
+            <!-- Row 3: Chairman Email | Chairman Mobile -->
+            <div class="form-grid-row">
+              <!-- Chairman Email -->
+              <div class="form-group">
+                <label for="chairman_email">Chairman Email <span class="required">*</span></label>
+                <div class="input-wrap">
+                  <input type="email" id="chairman_email" name="chairman_email" placeholder="chairman@example.com" autocomplete="off" required />
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  <div class="field-status" id="emailStatus"></div>
+                </div>
+              </div>
+
+              <!-- Chairman Mobile (Optional) -->
+              <div class="form-group">
+                <label for="chairman_mobile">Chairman Mobile <span style="color:var(--muted);font-size:.8em;font-weight:400;">(optional)</span></label>
+                <div class="input-wrap">
+                  <input type="tel" id="chairman_mobile" name="chairman_mobile" placeholder="e.g. 9876543210" autocomplete="off" maxlength="15" pattern="[+\d\s\-()]{7,15}" />
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.72 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 1.27h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.73 16.92z"/>
+                  </svg>
+                  <div class="field-status" id="mobileStatus"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 4: Total Flats | Subscription Valid Upto -->
+            <div class="form-grid-row">
+              <!-- Total Flats -->
+              <div class="form-group">
+                <label for="total_flats">Total Flats <span class="required">*</span></label>
+                <div class="input-wrap">
+                  <input type="number" id="total_flats" name="total_flats" placeholder="e.g. 120" min="1" autocomplete="off" required />
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
+                  </svg>
+                  <div class="num-spinners">
+                    <button type="button" class="spin-btn spin-up" onclick="stepNumberInput('total_flats', 1)" tabindex="-1" title="Increase">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+                    </button>
+                    <button type="button" class="spin-btn spin-down" onclick="stepNumberInput('total_flats', -1)" tabindex="-1" title="Decrease">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                  </div>
+                  <div class="field-status" id="flatsStatus"></div>
+                </div>
+              </div>
+
+              <!-- Subscription Valid Upto -->
+              <div class="form-group">
+                <label for="subscription_valid_upto">Subscription Valid Upto <span class="required">*</span></label>
+                <div class="input-wrap">
+                  <input type="date" id="subscription_valid_upto" name="subscription_valid_upto" autocomplete="off" required />
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  <div class="field-status" id="subDateStatus"></div>
+                </div>
               </div>
             </div>
 
             <!-- Divider -->
-            <div style="border-top:1px solid rgba(255,255,255,.07); margin: .5rem 0 1rem;"></div>
+            <div style="border-top:1px solid rgba(255,255,255,.07); margin: .25rem 0 .75rem;"></div>
             <p style="font-size:.8rem; color:var(--muted); margin-bottom:.75rem;">Set a login password for this apartment account.</p>
 
-            <!-- Create Password -->
-            <div class="form-group">
-              <label for="apt_password">Create Password <span class="required">*</span></label>
-              <div class="input-wrap">
-                <input type="password" id="apt_password" name="apt_password" placeholder="Min. 6 characters" autocomplete="new-password" required />
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                <button type="button" class="pwd-toggle" onclick="togglePwd('apt_password','toggleIcon1')" tabindex="-1" title="Show/hide password">
-                  <svg id="toggleIcon1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            <!-- Row 3: Passwords -->
+            <div class="form-grid-row">
+              <!-- Create Password -->
+              <div class="form-group">
+                <label for="apt_password">Create Password <span class="required">*</span></label>
+                <div class="input-wrap">
+                  <input type="password" id="apt_password" name="apt_password" placeholder="Min. 6 characters" autocomplete="new-password" required />
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
-                </button>
-                <div class="field-status" id="pwdStatus"></div>
+                  <button type="button" class="pwd-toggle" onclick="togglePwd('apt_password','toggleIcon1')" tabindex="-1" title="Show/hide password">
+                    <svg id="toggleIcon1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                  <div class="field-status" id="pwdStatus"></div>
+                </div>
               </div>
-            </div>
 
-            <!-- Confirm Password -->
-            <div class="form-group">
-              <label for="apt_password_confirm">Re-enter Password <span class="required">*</span></label>
-              <div class="input-wrap">
-                <input type="password" id="apt_password_confirm" name="apt_password_confirm" placeholder="Repeat the password" autocomplete="new-password" required />
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                <button type="button" class="pwd-toggle" onclick="togglePwd('apt_password_confirm','toggleIcon2')" tabindex="-1" title="Show/hide password">
-                  <svg id="toggleIcon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              <!-- Confirm Password -->
+              <div class="form-group">
+                <label for="apt_password_confirm">Re-enter Password <span class="required">*</span></label>
+                <div class="input-wrap">
+                  <input type="password" id="apt_password_confirm" name="apt_password_confirm" placeholder="Repeat the password" autocomplete="new-password" required />
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
-                </button>
-                <div class="field-status" id="confirmPwdStatus"></div>
-              </div>
-              <div class="pwd-mismatch" id="pwdMismatch" style="display:none; color:var(--error); font-size:.78rem; margin-top:.35rem;">
-                ⚠ Passwords do not match.
+                  <button type="button" class="pwd-toggle" onclick="togglePwd('apt_password_confirm','toggleIcon2')" tabindex="-1" title="Show/hide password">
+                    <svg id="toggleIcon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                  <div class="field-status" id="confirmPwdStatus"></div>
+                </div>
+                <div class="pwd-mismatch" id="pwdMismatch" style="display:none; color:var(--error); font-size:.78rem; margin-top:.35rem;">
+                  ⚠ Passwords do not match.
+                </div>
               </div>
             </div>
 
             <div class="btn-row">
-              <button type="button" class="btn btn-ghost" onclick="resetForm()">Clear</button>
+              <button type="button" class="btn btn-ghost" id="clearBtn" onclick="resetForm()">Clear</button>
               <button type="submit" class="btn btn-primary" id="submitBtn">
                 <span class="btn-text">Register Apartment</span>
                 <div class="spinner"></div>
@@ -716,18 +270,19 @@
             <table>
               <thead>
                 <tr>
-                  <th>Society ID</th>
-                  <th>Society / Company</th>
+                  <th>ID</th>
+                  <th>Society</th>
                   <th>Block / Wing</th>
                   <th>Chairman Email</th>
                   <th>Registered</th>
+                  <th>Status</th>
                   <th style="text-align: right;">Actions</th>
                 </tr>
               </thead>
               <tbody id="apartmentTbody">
                 <!-- Skeleton rows while loading -->
-                <tr class="skeleton-tr"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
-                <tr class="skeleton-tr"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+                <tr class="skeleton-tr"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
+                <tr class="skeleton-tr"><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td><td><div class="skeleton"></div></td></tr>
               </tbody>
             </table>
           </div>
@@ -748,515 +303,5 @@
 
       </div>
 
-    </main>
-  </div>
-
-  <!-- Delete Modal -->
-  <div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-      <div class="modal-title">Delete Apartment</div>
-      <div class="modal-desc">
-        Are you sure you want to remove <strong id="deleteTargetName"></strong>? This record will be permanently deleted from MongoDB.
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
-        <button class="btn btn-danger" id="confirmDeleteBtn">Delete Record</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Details Modal -->
-  <div class="modal-overlay" id="detailsModal">
-    <div class="modal-box">
-      <div class="modal-title" id="detailSocName">Society Details</div>
-      <div class="modal-desc" id="detailContent" style="margin-bottom: 1rem;">
-        <!-- Details injected dynamically -->
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal('detailsModal')">Close</button>
-        <button class="btn btn-primary" id="detailCopyBtn">Copy ID</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notifications Container -->
-  <div class="toast-container" id="toastContainer"></div>
-
-  <script>
-    // State management
-    let state = {
-      apartments: [],
-      filtered: [],
-      societies: [],
-      viewMode: 'table',
-      pendingDeleteId: null
-    };
-
-    // Elements
-    const form            = document.getElementById('registerForm');
-    const submitBtn       = document.getElementById('submitBtn');
-    const societyInput    = document.getElementById('society_name');
-    const blockInput      = document.getElementById('block');
-    const emailInput      = document.getElementById('chairman_email');
-    const searchInput     = document.getElementById('searchInput');
-    const apartmentTbody  = document.getElementById('apartmentTbody');
-    const cardsView       = document.getElementById('cardsView');
-
-    function showTab(tabId) {
-      document.getElementById('navDashboardBtn').classList.toggle('active', tabId === 'dashboard');
-      document.getElementById('navRegisterBtn').classList.toggle('active', tabId === 'register');
-      document.getElementById('tabDashboard').style.display = tabId === 'dashboard' ? 'flex' : 'none';
-      document.getElementById('tabRegister').style.display = tabId === 'register' ? 'block' : 'none';
-    }
-    const tableView       = document.getElementById('tableView');
-    const emptyState      = document.getElementById('emptyState');
-    const duplicateWarning= document.getElementById('duplicateWarning');
-
-    // Init
-    document.addEventListener('DOMContentLoaded', () => {
-      showTab('dashboard');
-      fetchApartments();
-      setupEventListeners();
-    });
-
-    function setupEventListeners() {
-      form.addEventListener('submit', handleFormSubmit);
-
-      // Realtime validation & duplicate checks
-      const debouncedCheck = debounce(checkDuplicate, 350);
-      societyInput.addEventListener('input', () => {
-        validateField(societyInput);
-        debouncedCheck();
-      });
-      blockInput.addEventListener('input', () => {
-        validateField(blockInput);
-        debouncedCheck();
-      });
-      emailInput.addEventListener('input', () => validateEmailField());
-      document.getElementById('apt_password').addEventListener('input', validatePasswordFields);
-      document.getElementById('apt_password_confirm').addEventListener('input', validatePasswordFields);
-
-      // Search & Refresh
-      searchInput.addEventListener('input', debounce(handleSearch, 200));
-      document.getElementById('refreshBtn').addEventListener('click', () => {
-        const btn = document.getElementById('refreshBtn');
-        btn.style.transform = 'rotate(360deg)';
-        btn.style.transition = 'transform .5s ease';
-        setTimeout(() => btn.style.transform = 'none', 500);
-        fetchApartments();
-      });
-
-      // View Toggle
-      document.getElementById('viewTableBtn').addEventListener('click', () => setViewMode('table'));
-      document.getElementById('viewCardsBtn').addEventListener('click', () => setViewMode('cards'));
-
-      // Confirm Delete
-      document.getElementById('confirmDeleteBtn').addEventListener('click', executeDelete);
-    }
-
-    function setViewMode(mode) {
-      state.viewMode = mode;
-      document.getElementById('viewTableBtn').classList.toggle('active', mode === 'table');
-      document.getElementById('viewCardsBtn').classList.toggle('active', mode === 'cards');
-      if (mode === 'table') {
-        tableView.style.display = 'block';
-        cardsView.style.display = 'none';
-      } else {
-        tableView.style.display = 'none';
-        cardsView.style.display = 'grid';
-      }
-      render();
-    }
-
-    // Toast system
-    function showToast(message, type = 'success') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      toast.className = `toast toast-${type}`;
-
-      let iconSvg = '';
-      if (type === 'success') {
-        iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`;
-      } else if (type === 'error') {
-        iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
-      } else {
-        iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="8"/></svg>`;
-      }
-
-      toast.innerHTML = `${iconSvg} <span>${escapeHtml(message)}</span>`;
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.classList.add('toast-out');
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
-    }
-
-    // Fetch apartments list from backend API
-    async function fetchApartments() {
-      try {
-        const res = await fetch('/auth/register-apartment/list/');
-        if (!res.ok) throw new Error('Failed to fetch data');
-        const data = await res.json();
-
-        if (data.success) {
-          state.apartments = data.apartments || [];
-          state.filtered = [...state.apartments];
-          state.societies = data.societies || [];
-
-          updateStats(data.stats || {});
-          updateSuggestions(state.societies);
-          render();
-        }
-      } catch (err) {
-        showToast('Error connecting to backend server', 'error');
-      }
-    }
-
-    function updateStats(stats) {
-      document.getElementById('statApartments').textContent = stats.total_apartments ?? state.apartments.length;
-      document.getElementById('statSocieties').textContent  = stats.total_societies ?? 0;
-      document.getElementById('statChairmen').textContent   = stats.unique_chairmen ?? 0;
-      document.getElementById('recordCount').textContent    = state.filtered.length;
-    }
-
-    function updateSuggestions(societies) {
-      const datalist = document.getElementById('society_suggestions');
-      datalist.innerHTML = societies.map(s => `<option value="${escapeHtml(s)}">`).join('');
-    }
-
-    // Realtime search filtering
-    function handleSearch() {
-      const query = searchInput.value.trim().toLowerCase();
-      if (!query) {
-        state.filtered = [...state.apartments];
-      } else {
-        state.filtered = state.apartments.filter(a =>
-          a.society_name.toLowerCase().includes(query) ||
-          a.block.toLowerCase().includes(query) ||
-          a.chairman_email.toLowerCase().includes(query) ||
-          a.society_id.toLowerCase().includes(query)
-        );
-      }
-      document.getElementById('recordCount').textContent = state.filtered.length;
-      render();
-    }
-
-    // Render table & card views
-    function render() {
-      if (state.filtered.length === 0) {
-        apartmentTbody.innerHTML = '';
-        cardsView.innerHTML = '';
-        emptyState.style.display = 'flex';
-        return;
-      }
-      emptyState.style.display = 'none';
-
-      // Table Render
-      apartmentTbody.innerHTML = state.filtered.map(apt => `
-        <tr id="row-${apt.society_id}">
-          <td><span class="soc-badge">#${escapeHtml(apt.society_id)}</span></td>
-          <td><strong>${escapeHtml(apt.society_name)}</strong></td>
-          <td><span class="block-badge">${escapeHtml(apt.block)}</span></td>
-          <td>${escapeHtml(apt.chairman_email)}</td>
-          <td style="color: var(--muted); font-size: .8rem;">${formatDate(apt.registered_at)}</td>
-          <td style="text-align: right;">
-            <div style="display: inline-flex; gap: .4rem;">
-              <button class="btn-icon" onclick="openDetailsModal('${escapeHtml(apt.society_id)}')" title="View Details">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-              </button>
-              <button class="btn-icon btn-danger" onclick="promptDelete('${escapeHtml(apt.society_id)}', '${escapeHtml(apt.society_name)} - ${escapeHtml(apt.block)}')" title="Delete Record">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
-
-      // Cards Render
-      cardsView.innerHTML = state.filtered.map(apt => `
-        <div class="apt-card" id="card-${apt.society_id}">
-          <div class="apt-card-header">
-            <div>
-              <div class="apt-card-title">${escapeHtml(apt.society_name)}</div>
-              <div class="apt-card-subtitle">Block / Wing: ${escapeHtml(apt.block)}</div>
-            </div>
-            <span class="soc-badge">#${escapeHtml(apt.society_id)}</span>
-          </div>
-          <div class="apt-card-meta">
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              ${escapeHtml(apt.chairman_email)}
-            </div>
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Registered ${formatDate(apt.registered_at)}
-            </div>
-          </div>
-          <div class="apt-card-actions">
-            <button class="btn btn-ghost btn-icon" onclick="openDetailsModal('${escapeHtml(apt.society_id)}')" title="View Details">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            </button>
-            <button class="btn btn-danger btn-icon" onclick="promptDelete('${escapeHtml(apt.society_id)}', '${escapeHtml(apt.society_name)} - ${escapeHtml(apt.block)}')" title="Delete">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            </button>
-          </div>
-        </div>
-      `).join('');
-
-    }
-
-    // Dynamic Form Submission
-    async function handleFormSubmit(e) {
-      e.preventDefault();
-      const society_name      = societyInput.value.trim();
-      const block             = blockInput.value.trim();
-      const chairman_email    = emailInput.value.trim();
-      const password          = document.getElementById('apt_password').value;
-      const passwordConfirm   = document.getElementById('apt_password_confirm').value;
-
-      if (!society_name || !chairman_email) {
-        showToast('Please fill out all required fields.', 'error');
-        return;
-      }
-
-      if (!password || password.length < 6) {
-        showToast('Password must be at least 6 characters.', 'error');
-        document.getElementById('apt_password').classList.add('is-invalid');
-        return;
-      }
-
-      if (password !== passwordConfirm) {
-        showToast('Passwords do not match.', 'error');
-        document.getElementById('apt_password_confirm').classList.add('is-invalid');
-        document.getElementById('pwdMismatch').style.display = 'block';
-        return;
-      }
-
-      submitBtn.classList.add('loading');
-      submitBtn.disabled = true;
-
-      try {
-        const res = await fetch('/auth/register-apartment/save/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-          },
-          body: JSON.stringify({ society_name, block, chairman_email, password }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-          showToast(data.message || 'Apartment registered successfully!', 'success');
-          resetForm();
-
-          // Refresh list dynamically
-          fetchApartments();
-          showTab('dashboard');
-        } else {
-          showToast(data.error || 'Server error occurred during submission.', 'error');
-        }
-      } catch (err) {
-        showToast('Network error. Failed to reach server.', 'error');
-      } finally {
-        submitBtn.classList.remove('loading');
-        submitBtn.disabled = false;
-      }
-    }
-
-    // Realtime Duplicate Check
-    async function checkDuplicate() {
-      const society_name = societyInput.value.trim();
-      const block        = blockInput.value.trim();
-
-      if (!society_name || !block) {
-        duplicateWarning.classList.remove('show');
-        return;
-      }
-
-      try {
-        const res = await fetch(`/auth/register-apartment/check-duplicate/?society_name=${encodeURIComponent(society_name)}&block=${encodeURIComponent(block)}`);
-        const data = await res.json();
-        if (data.exists) {
-          document.getElementById('duplicateWarningText').textContent = `Block "${block}" is already registered under "${society_name}" (ID: #${data.existing_id})`;
-          duplicateWarning.classList.add('show');
-          blockInput.classList.add('is-invalid');
-        } else {
-          duplicateWarning.classList.remove('show');
-          blockInput.classList.remove('is-invalid');
-        }
-      } catch (e) {}
-    }
-
-    function validateField(el) {
-      if (el.value.trim() !== '') {
-        el.classList.remove('is-invalid');
-        el.classList.add('is-valid');
-      } else {
-        el.classList.remove('is-valid', 'is-invalid');
-      }
-    }
-
-    function validateEmailField() {
-      const email = emailInput.value.trim();
-      const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if (email === '') {
-        emailInput.classList.remove('is-valid', 'is-invalid');
-      } else if (valid) {
-        emailInput.classList.remove('is-invalid');
-        emailInput.classList.add('is-valid');
-      } else {
-        emailInput.classList.remove('is-valid');
-        emailInput.classList.add('is-invalid');
-      }
-    }
-
-    // Password field validation
-    function validatePasswordFields() {
-      const pwd     = document.getElementById('apt_password').value;
-      const confirm = document.getElementById('apt_password_confirm').value;
-      const mismatch = document.getElementById('pwdMismatch');
-
-      if (pwd && pwd.length < 6) {
-        document.getElementById('apt_password').classList.add('is-invalid');
-      } else if (pwd) {
-        document.getElementById('apt_password').classList.remove('is-invalid');
-        document.getElementById('apt_password').classList.add('is-valid');
-      }
-
-      if (confirm) {
-        const match = pwd === confirm;
-        document.getElementById('apt_password_confirm').classList.toggle('is-invalid', !match);
-        document.getElementById('apt_password_confirm').classList.toggle('is-valid', match);
-        mismatch.style.display = match ? 'none' : 'block';
-      } else {
-        mismatch.style.display = 'none';
-        document.getElementById('apt_password_confirm').classList.remove('is-valid', 'is-invalid');
-      }
-    }
-
-    // Toggle password visibility
-    function togglePwd(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon  = document.getElementById(iconId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.innerHTML = `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>`;
-      } else {
-        input.type = 'password';
-        icon.innerHTML = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
-      }
-    }
-
-    function resetForm() {
-      form.reset();
-      [societyInput, blockInput, emailInput,
-       document.getElementById('apt_password'),
-       document.getElementById('apt_password_confirm')
-      ].forEach(el => el.classList.remove('is-valid', 'is-invalid'));
-      duplicateWarning.classList.remove('show');
-      document.getElementById('pwdMismatch').style.display = 'none';
-    }
-
-    // Copy action
-    function copyId(id) {
-      navigator.clipboard.writeText(id).then(() => {
-        showToast(`Copied Society ID #${id} to clipboard!`, 'info');
-      });
-    }
-
-    // Details Modal
-    function openDetailsModal(id) {
-      const apt = state.apartments.find(a => a.society_id === id);
-      if (!apt) return;
-
-      document.getElementById('detailSocName').textContent = apt.society_name;
-      document.getElementById('detailContent').innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: .75rem; margin-top: .8rem; font-size: .9rem;">
-          <div><strong style="color: var(--muted);">Society ID:</strong> <span class="soc-badge">#${escapeHtml(apt.society_id)}</span></div>
-          <div><strong style="color: var(--muted);">Block / Wing:</strong> <span class="block-badge">${escapeHtml(apt.block)}</span></div>
-          <div><strong style="color: var(--muted);">Chairman Email:</strong> ${escapeHtml(apt.chairman_email)}</div>
-          <div><strong style="color: var(--muted);">Registered Date:</strong> ${formatDate(apt.registered_at, true)}</div>
-        </div>
-      `;
-
-      document.getElementById('detailCopyBtn').onclick = () => copyId(apt.society_id);
-      openModal('detailsModal');
-    }
-
-    // Delete flow
-    function promptDelete(id, name) {
-      state.pendingDeleteId = id;
-      document.getElementById('deleteTargetName').textContent = name;
-      openModal('deleteModal');
-    }
-
-    async function executeDelete() {
-      const id = state.pendingDeleteId;
-      if (!id) return;
-
-      try {
-        const res = await fetch(`/auth/register-apartment/delete/${id}/`, {
-          method: 'DELETE',
-          headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-          }
-        });
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-          showToast(`Apartment ID #${id} deleted successfully.`, 'success');
-          closeModal('deleteModal');
-          fetchApartments();
-        } else {
-          showToast(data.error || 'Failed to delete record.', 'error');
-        }
-      } catch (err) {
-        showToast('Network error during deletion.', 'error');
-      }
-    }
-
-    // Modal Helpers
-    function openModal(modalId) {
-      document.getElementById(modalId).classList.add('open');
-    }
-    function closeModal(modalId) {
-      document.getElementById(modalId).classList.remove('open');
-    }
-
-    // Utilities
-    function debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => { clearTimeout(timeout); func(...args); };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
-    }
-
-    function formatDate(dateStr, full = false) {
-      if (!dateStr) return 'N/A';
-      try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return dateStr;
-        if (full) return date.toLocaleString();
-        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-      } catch (e) {
-        return dateStr;
-      }
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-  </script>
-</body>
-</html>
+    
+{% endblock %}
