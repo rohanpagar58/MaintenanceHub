@@ -7,4 +7,5 @@ urlpatterns = [
     path('receipt/new/', views.create_receipt_page, name='create_receipt'),
     path('receipt/save/', views.save_receipt_view, name='save_receipt'),
     path('receipt/history/<str:member_id>/', views.member_receipt_history_view, name='member_receipt_history'),
+    path('receipt/download/<str:receipt_id>/', views.download_receipt_pdf_view, name='download_receipt'),
 ]

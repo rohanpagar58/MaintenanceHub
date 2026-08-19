@@ -446,8 +446,12 @@
       body: JSON.stringify(payload)
     }).then(res => res.json()).then(data => {
       if(data.success) {
-        alert(data.message);
-        window.location.reload();
+        if (confirm(data.message + "\n\nWould you like to download the receipt PDF?")) {
+            window.location.href = `/maintenance/receipt/download/${data.receipt_id}/`;
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            window.location.reload();
+        }
       } else {
         alert(data.error);
         btn.innerHTML = 'Generate Receipt'; btn.disabled = false;

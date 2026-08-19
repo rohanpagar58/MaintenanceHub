@@ -133,3 +133,32 @@ def member_receipt_history_view(request, member_id):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': f'Server error: {str(e)}'}, status=500)
+
+@apartment_user_required
+@require_http_methods(["GET"])
+def download_receipt_pdf_view(request, receipt_id):
+    try:
+        from django.http import HttpResponse, Http404
+        society_id = request.session.get('apartment_society_id')
+        receipt_col = get_receipt_collection()
+        
+        receipt = receipt_col.find_one({'_id': ObjectId(receipt_id), 'society_id': society_id})
+        if not receipt:
+            raise Http404("Receipt not found")
+            
+        from apps.super_user.views import get_mongo_collection
+        society = get_mongo_collection().find_one({'society_id': society_id})
+        if not society:
+            raise Http404("Society not found")
+            
+        from apps.maintenance.pdf_generator import generate_receipt_pdf
+        pdf_buffer = generate_receipt_pdf(receipt, society)
+        
+        response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="receipt_{receipt.get("receipt_no")}.pdf"'
+        return response
+        
+    except ImportError as ie:
+        return JsonResponse({'success': False, 'error': str(ie)}, status=501)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Server error: {str(e)}'}, status=500)

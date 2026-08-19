@@ -369,10 +369,11 @@
               <th>Amount</th>
               <th>Duration</th>
               <th>Mode</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="historyTableBody">
-            <tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+            <tr><td colspan="6" style="text-align:center; padding: 2rem;">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -559,7 +560,7 @@
 
     async function openHistoryModal(memberId, memberName) {
       document.getElementById('historyMemberName').textContent = memberName;
-      document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading...</td></tr>';
+      document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Loading...</td></tr>';
       document.getElementById('historyModal').classList.add('open');
       
       try {
@@ -568,7 +569,7 @@
         
         if (data.success) {
           if (data.receipts.length === 0) {
-            document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color:var(--muted);">No receipts found for this member.</td></tr>';
+            document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color:var(--muted);">No receipts found for this member.</td></tr>';
             return;
           }
           
@@ -599,15 +600,20 @@
                 <td>₹${parseFloat(r.amount).toFixed(2)}</td>
                 <td>${formatDuration(r.duration_mode, r.duration_details)}</td>
                 <td><span class="flat-badge">${r.payment_mode}</span></td>
+                <td>
+                  <a href="/maintenance/receipt/download/${r.id}/" class="btn-history" style="text-decoration:none;" title="Download PDF">
+                    📥 PDF
+                  </a>
+                </td>
               </tr>
             `;
           });
           document.getElementById('historyTableBody').innerHTML = html;
         } else {
-          document.getElementById('historyTableBody').innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 2rem; color:var(--error);">${data.error}</td></tr>`;
+          document.getElementById('historyTableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color:var(--error);">${data.error}</td></tr>`;
         }
       } catch (e) {
-        document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color:var(--error);">Network Error</td></tr>';
+        document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color:var(--error);">Network Error</td></tr>';
       }
     }
   </script>
