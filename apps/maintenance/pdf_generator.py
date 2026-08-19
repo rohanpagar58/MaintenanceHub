@@ -64,8 +64,20 @@ def generate_receipt_pdf(receipt, society):
     c.rect(box_x, box_y, box_w, box_h)
     
     c.setFillColor(dark_gray)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(box_x + box_w/2, box_y + 40, str(society.get('society_name', 'Society Name')).upper())
+    
+    soc_name = str(society.get('society_name', 'Society Name')).upper()
+    block = str(society.get('block', '')).strip()
+    if block and block != '-':
+        soc_name = f"{soc_name} - {block.upper()}"
+        
+    name_font_size = 12
+    if c.stringWidth(soc_name, "Helvetica-Bold", name_font_size) > box_w - 10:
+        name_font_size = 10
+        if c.stringWidth(soc_name, "Helvetica-Bold", name_font_size) > box_w - 10:
+            name_font_size = 8
+            
+    c.setFont("Helvetica-Bold", name_font_size)
+    c.drawCentredString(box_x + box_w/2, box_y + 40, soc_name)
     
     c.setFont("Helvetica", 9)
     address = society.get('address', '')
@@ -108,7 +120,22 @@ def generate_receipt_pdf(receipt, society):
             m_str = ", ".join([month_names[int(m)-1] for m in months if str(m).isdigit() and 1 <= int(m) <= 12])
             display_str = f"{m_str} {year_val}"
         else:
-            display_str = f"{dtype} {year_val}"
+            fy_start = int(society.get('financial_year_start_month', 4))
+            start_offset = 0
+            count = 0
+            if dtype == 'Q1': start_offset, count = 0, 3
+            elif dtype == 'Q2': start_offset, count = 3, 3
+            elif dtype == 'Q3': start_offset, count = 6, 3
+            elif dtype == 'Q4': start_offset, count = 9, 3
+            elif dtype == 'H1': start_offset, count = 0, 6
+            elif dtype == 'H2': start_offset, count = 6, 6
+            
+            if count > 0:
+                m1 = (fy_start - 1 + start_offset) % 12
+                m2 = (fy_start - 1 + start_offset + count - 1) % 12
+                display_str = f"{month_names[m1]}-{month_names[m2]} {year_val}"
+            else:
+                display_str = f"{dtype} {year_val}"
     elif duration_mode == 'Yearly':
         fy_start = int(society.get('financial_year_start_month', 4))
         fy_m = month_names[fy_start - 1]
@@ -209,23 +236,48 @@ def generate_receipt_pdf(receipt, society):
     c.drawString(left_margin, text_y - 30, "This receipt is valid subject to Realisation of cheque.")
     
     # ── Bottom Right: Signature ──
-    c.setFont("Helvetica", 11)
-    c.setFillColor(HexColor("#000080")) # Navy blue for signature text
-    
-    # Generate signature name based on society
-    sig_name = society.get('society_name', 'Society').upper()
-    c.drawCentredString(width - 90, text_y - 15, sig_name)
     c.setFont("Helvetica-Oblique", 10)
     c.setFillColor(dark_gray)
-    c.drawCentredString(width - 90, text_y - 30, "Signature")
+    c.drawCentredString(width - 90, text_y - 15, "Authorized Signatory")
     
-    # Blue scribble representation for signature
-    c.setStrokeColor(HexColor("#000080"))
-    c.setLineWidth(1.5)
-    sx = width - 120
-    sy = text_y + 5
-    c.bezier(sx, sy, sx+10, sy+15, sx+20, sy-10, sx+30, sy+10)
-    c.bezier(sx+30, sy+10, sx+40, sy+20, sx+50, sy-5, sx+60, sy+15)
+    # Signature rendering
+    signature_image = society.get('signature_image', '')
+    if signature_image and signature_image.startswith('data:image'):
+        try:
+            import base64
+            from reportlab.lib.utils import ImageReader
+            from PIL import Image
+            
+            b64_data = signature_image.split(",")[1]
+            image_data = base64.b64decode(b64_data)
+            
+            # Open with PIL and downscale to prevent huge PDFs & slow rendering
+            pil_img = Image.open(BytesIO(image_data))
+            if pil_img.width > 600 or pil_img.height > 300:
+                # Use ANTIALIAS for older Pillow compatibility, or LANCZOS for newer
+                resample_filter = getattr(Image, 'Resampling', Image).LANCZOS
+                pil_img.thumbnail((600, 300), resample_filter)
+                
+            img = ImageReader(pil_img)
+            
+            # Draw image larger (180x80 instead of 140x60)
+            c.drawImage(img, width - 180, text_y - 15, 160, 80, preserveAspectRatio=True, anchor='s', mask='auto')
+        except Exception:
+            # Fallback to blue scribble if decoding fails
+            c.setStrokeColor(HexColor("#000080"))
+            c.setLineWidth(1.5)
+            sx = width - 120
+            sy = text_y + 5
+            c.bezier(sx, sy, sx+10, sy+15, sx+20, sy-10, sx+30, sy+10)
+            c.bezier(sx+30, sy+10, sx+40, sy+20, sx+50, sy-5, sx+60, sy+15)
+    else:
+        # Default Blue scribble representation for signature
+        c.setStrokeColor(HexColor("#000080"))
+        c.setLineWidth(1.5)
+        sx = width - 120
+        sy = text_y + 5
+        c.bezier(sx, sy, sx+10, sy+15, sx+20, sy-10, sx+30, sy+10)
+        c.bezier(sx+30, sy+10, sx+40, sy+20, sx+50, sy-5, sx+60, sy+15)
     
     c.save()
     buffer.seek(0)

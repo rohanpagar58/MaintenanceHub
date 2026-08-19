@@ -113,6 +113,42 @@
   }
   .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(99,102,241,.5); }
   
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    backdrop-filter: blur(4px); z-index: 1000;
+    display: none; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity .3s ease;
+  }
+  .modal-overlay.show { display: flex; opacity: 1; }
+  .modal-content {
+    background: #111425; border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem; width: 90%; max-width: 400px;
+    transform: translateY(20px); transition: transform .3s ease;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    text-align: center;
+  }
+  .modal-overlay.show .modal-content { transform: translateY(0); }
+  
+  .modal-icon {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: rgba(52, 211, 153, 0.15); color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem auto; font-size: 2rem;
+  }
+  .modal-title { font-size: 1.25rem; font-weight: 700; margin-bottom: .75rem; color: var(--text); }
+  .modal-desc { font-size: .95rem; color: var(--muted); margin-bottom: 2rem; line-height: 1.5; }
+  
+  .modal-actions { display: flex; gap: 1rem; }
+  .modal-actions button {
+    flex: 1; padding: .8rem; border-radius: 10px; font-size: .95rem; font-weight: 600;
+    cursor: pointer; transition: all .2s; border: none;
+  }
+  .btn-cancel { background: rgba(255,255,255,.05); color: var(--text); border: 1px solid var(--border-light) !important; }
+  .btn-cancel:hover { background: rgba(255,255,255,.1); }
+  .btn-confirm { background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; box-shadow: 0 4px 15px rgba(99,102,241,.3); }
+  .btn-confirm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,.4); }
+
   @media (max-width: 768px) {
     .card-form { padding: 1.5rem; }
     .form-grid { grid-template-columns: 1fr; }
@@ -259,6 +295,19 @@
       
       <button type="submit" class="btn-submit" id="submitBtn">Generate Receipt</button>
     </form>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal-content">
+    <div class="modal-icon">✓</div>
+    <div class="modal-title">Receipt Generated!</div>
+    <div class="modal-desc" id="successModalDesc">The maintenance receipt has been created successfully. Would you like to download the PDF now?</div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="finishProcess()">No, Done</button>
+      <button type="button" class="btn-confirm" id="downloadPdfBtn">Download PDF</button>
+    </div>
   </div>
 </div>
 
@@ -446,12 +495,9 @@
       body: JSON.stringify(payload)
     }).then(res => res.json()).then(data => {
       if(data.success) {
-        if (confirm(data.message + "\n\nWould you like to download the receipt PDF?")) {
-            window.location.href = `/maintenance/receipt/download/${data.receipt_id}/`;
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            window.location.reload();
-        }
+        document.getElementById('successModalDesc').innerText = data.message + "\n\nWould you like to download the PDF now?";
+        document.getElementById('downloadPdfBtn').onclick = () => downloadReceiptAndFinish(data.receipt_id);
+        document.getElementById('successModal').classList.add('show');
       } else {
         alert(data.error);
         btn.innerHTML = 'Generate Receipt'; btn.disabled = false;
@@ -460,6 +506,25 @@
       alert('Network error. Please try again.');
       btn.innerHTML = 'Generate Receipt'; btn.disabled = false;
     });
+  }
+
+  function finishProcess() {
+    window.location.reload();
+  }
+
+  function downloadReceiptAndFinish(receiptId) {
+    // Open download in new tab or via iframe to not interrupt the reload
+    const a = document.createElement('a');
+    a.href = `/maintenance/receipt/download/${receiptId}/`;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Slight delay before reloading to ensure download is triggered
+    setTimeout(() => {
+        finishProcess();
+    }, 1000);
   }
 </script>
 {% endblock %}

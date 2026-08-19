@@ -198,6 +198,26 @@
               </div>
             </div>
 
+            <!-- Row 5: Signature Upload -->
+            <div class="form-grid-row">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="signature_image">Upload Signature <span style="color:var(--muted);font-size:.8em;font-weight:400;">(optional, used in PDF receipts)</span></label>
+                <div class="input-wrap" style="display: flex; gap: 1rem; align-items: center; background: rgba(255,255,255,.03); border: 1.5px dashed var(--border); border-radius: 12px; padding: 0.8rem 1rem;">
+                  <input type="file" id="signature_image" name="signature_image" accept="image/*" style="display: none;" />
+                  <button type="button" class="btn btn-ghost" onclick="document.getElementById('signature_image').click()" style="padding: 0.5rem 1rem; font-size: 0.85rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; margin-right: 6px; vertical-align: middle; display: inline-block;">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Choose Image
+                  </button>
+                  <span id="file-chosen" style="color: var(--muted); font-size: 0.85rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file chosen</span>
+                  <img id="signature_preview" src="" alt="Signature Preview" style="display: none; max-height: 40px; max-width: 120px; object-fit: contain; border-radius: 4px; background: #fff; padding: 2px; border: 1px solid rgba(255,255,255,0.1);" />
+                </div>
+              </div>
+            </div>
+
             <!-- Divider -->
             <div style="border-top:1px solid rgba(255,255,255,.07); margin: .25rem 0 .75rem;"></div>
             <p style="font-size:.8rem; color:var(--muted); margin-bottom:.75rem;">Set a login password for this apartment account.</p>

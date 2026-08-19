@@ -338,6 +338,7 @@ def register_apartment_view(request):
         total_flats     = data.get('total_flats', 0)
         subscription_valid_upto = data.get('subscription_valid_upto', '').strip()
         financial_year_start_month = data.get('financial_year_start_month', '4') # Default to April
+        signature_image = data.get('signature_image', '')
         password        = data.get('password', '').strip()
 
         # ── Required field checks ──────────────────────────────────────────
@@ -420,6 +421,7 @@ def register_apartment_view(request):
             'total_flats':             total_flats_int,
             'subscription_valid_upto': subscription_valid_upto,
             'financial_year_start_month': int(financial_year_start_month),
+            'signature_image':         signature_image,
             'password':                make_password(password),
             'is_active':               True,
             'registered_at':           datetime.datetime.utcnow().isoformat(),
@@ -443,6 +445,7 @@ def register_apartment_view(request):
                 'total_flats': total_flats_int,
                 'subscription_valid_upto': subscription_valid_upto,
                 'registered_at': apartment_doc['registered_at'],
+                'signature_image': signature_image,
             }
         })
 
@@ -514,6 +517,7 @@ def get_apartments_list_view(request):
                 'subscription_valid_upto': doc.get('subscription_valid_upto', ''),
                 'registered_at': doc.get('registered_at', ''),
                 'is_active': doc.get('is_active', True),  # default True for old records
+                'signature_image': doc.get('signature_image', ''),
             })
 
         # Sort apartments by society_id / registered_at descending
@@ -552,6 +556,7 @@ def update_apartment_view(request, society_id):
         chairman_mobile = data.get('chairman_mobile', '').strip()
         total_flats     = data.get('total_flats', 0)
         subscription_valid_upto = data.get('subscription_valid_upto', '').strip()
+        signature_image = data.get('signature_image', '')
         password        = data.get('password', '').strip()
 
         # ── Required field checks ──────────────────────────────────────────
@@ -612,6 +617,7 @@ def update_apartment_view(request, society_id):
             'chairman_mobile':         chairman_mobile,
             'total_flats':             total_flats_int,
             'subscription_valid_upto': subscription_valid_upto,
+            'signature_image':         signature_image,
         }
 
         # Update password only if provided

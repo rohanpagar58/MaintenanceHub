@@ -258,6 +258,14 @@
     .history-member-name { color: var(--primary-h); }
     .history-title-sep { margin: 0 0.4rem; }
 
+    /* Custom Scrollbar for Modal Body (Desktop) */
+    @media (min-width: 769px) {
+      .modal-body::-webkit-scrollbar { width: 6px; }
+      .modal-body::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 4px; margin: 4px 0; }
+      .modal-body::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 4px; }
+      .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.7); }
+    }
+
     @media (max-width: 768px) {
       .hero h1 { font-size: 1.8rem; }
       .stats-row { flex-direction: column; }
@@ -601,8 +609,13 @@
                 <td>${formatDuration(r.duration_mode, r.duration_details)}</td>
                 <td><span class="flat-badge">${r.payment_mode}</span></td>
                 <td>
-                  <a href="/maintenance/receipt/download/${r.id}/" class="btn-history" style="text-decoration:none;" title="Download PDF">
-                    📥 PDF
+                  <a href="/maintenance/receipt/download/${r.id}/" class="btn-history" style="text-decoration:none; display: inline-flex; align-items: center; gap: 0.4rem;" title="Download PDF">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    PDF
                   </a>
                 </td>
               </tr>

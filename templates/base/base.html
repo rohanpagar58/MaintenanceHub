@@ -827,6 +827,39 @@
       document.getElementById('apt_password').addEventListener('input', validatePasswordFields);
       document.getElementById('apt_password_confirm').addEventListener('input', validatePasswordFields);
 
+      // Signature preview and validation
+      const sigInput = document.getElementById('signature_image');
+      if (sigInput) {
+        sigInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          const preview = document.getElementById('signature_preview');
+          const fileChosen = document.getElementById('file-chosen');
+          if (file) {
+            // Check file size (5MB limit)
+            if (file.size > 10 * 3264 * 3264) {
+              showToast('File size must be less than 5MB.', 'error');
+              e.target.value = '';
+              if (fileChosen) fileChosen.textContent = 'No file chosen';
+              preview.src = '';
+              preview.style.display = 'none';
+              return;
+            }
+
+            if (fileChosen) fileChosen.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+              preview.src = evt.target.result;
+              preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+          } else {
+            if (fileChosen) fileChosen.textContent = 'No file chosen';
+            preview.src = '';
+            preview.style.display = 'none';
+          }
+        });
+      }
+
       // Search & Refresh
       searchInput.addEventListener('input', debounce(handleSearch, 200));
       document.getElementById('refreshBtn').addEventListener('click', () => {
@@ -1051,6 +1084,18 @@
       const subscription_valid_upto = document.getElementById('subscription_valid_upto').value.trim();
       const password                = document.getElementById('apt_password').value;
       const passwordConfirm         = document.getElementById('apt_password_confirm').value;
+      const financial_year_start_month = document.getElementById('financial_year_start_month').value;
+
+      // Extract signature base64 if present
+      let signature_image = '';
+      const preview = document.getElementById('signature_preview');
+      if (preview && preview.src && preview.src.startsWith('data:image')) {
+        signature_image = preview.src;
+      }
+      // Keep existing if unchanged during edit
+      if (state.editSocietyId && !signature_image && preview && preview.src) {
+        signature_image = preview.src; // Can be a URL or data URL
+      }
 
       // — Required: Society Name
       if (!society_name) {
@@ -1139,7 +1184,7 @@
             'Content-Type': 'application/json',
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
           },
-          body: JSON.stringify({ society_name, block, address, chairman_email, chairman_mobile, total_flats: parseInt(total_flats), subscription_valid_upto, password }),
+          body: JSON.stringify({ society_name, block, address, chairman_email, chairman_mobile, total_flats: parseInt(total_flats), subscription_valid_upto, password, financial_year_start_month, signature_image }),
         });
 
         const data = await res.json();
@@ -1347,7 +1392,7 @@
       el.dispatchEvent(new Event('input'));
     }
 
-    function resetForm() {
+      function resetForm() {
       form.reset();
       const wasEdit = !!state.editSocietyId;
       state.editSocietyId = null;
@@ -1361,9 +1406,19 @@
        document.getElementById('subscription_valid_upto'),
        document.getElementById('apt_password'),
        document.getElementById('apt_password_confirm')
-      ].forEach(el => el.classList.remove('is-valid', 'is-invalid'));
+      ].forEach(el => {
+          if(el) el.classList.remove('is-valid', 'is-invalid');
+      });
       duplicateWarning.classList.remove('show');
       document.getElementById('pwdMismatch').style.display = 'none';
+      
+      const sigPreview = document.getElementById('signature_preview');
+      if (sigPreview) {
+        sigPreview.src = '';
+        sigPreview.style.display = 'none';
+      }
+      const fileChosen = document.getElementById('file-chosen');
+      if (fileChosen) fileChosen.textContent = 'No file chosen';
 
       if (wasEdit) {
         showTab('dashboard');
@@ -1529,6 +1584,23 @@
       emailInput.value = apt.chairman_email;
       document.getElementById('chairman_mobile').value = apt.chairman_mobile || '';
       document.getElementById('total_flats').value = apt.total_flats || '';
+      if(apt.financial_year_start_month) {
+          document.getElementById('financial_year_start_month').value = apt.financial_year_start_month;
+      }
+      
+      const sigPreview = document.getElementById('signature_preview');
+      const fileChosen = document.getElementById('file-chosen');
+      if (sigPreview) {
+          if (apt.signature_image) {
+              sigPreview.src = apt.signature_image;
+              sigPreview.style.display = 'block';
+              if (fileChosen) fileChosen.textContent = 'Existing signature loaded';
+          } else {
+              sigPreview.src = '';
+              sigPreview.style.display = 'none';
+              if (fileChosen) fileChosen.textContent = 'No file chosen';
+          }
+      }
       
       // Ensure subscription_valid_upto is correctly formatted for date input
       let dateVal = apt.subscription_valid_upto || '';
