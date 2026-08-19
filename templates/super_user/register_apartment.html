@@ -23,7 +23,7 @@
       </div>
 
       <!-- Live Dynamic Metrics Bar -->
-      <div class="stats-grid">
+      <div class="stats-grid" id="statsGrid">
         <div class="stat-card">
           <div class="stat-icon-wrap stat-icon-1">🏢</div>
           <div class="stat-info">
@@ -88,7 +88,7 @@
 
               <!-- Block / Wing (Optional) -->
               <div class="form-group">
-                <label for="block">Block / Wing / Tower <span style="color:var(--muted);font-size:.8em;font-weight:400;">(optional)</span></label>
+                <label for="block">Wing <span style="color:var(--muted);font-size:.8em;font-weight:400;">(optional)</span></label>
                 <div class="input-wrap">
                   <input type="text" id="block" name="block" placeholder="e.g. Block A, Tower 1" autocomplete="off" />
                   <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -170,6 +170,30 @@
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
                   <div class="field-status" id="subDateStatus"></div>
+                </div>
+              </div>
+
+              <!-- Financial Year Start Month -->
+              <div class="form-group">
+                <label for="financial_year_start_month">Financial Year Start Month <span class="required">*</span></label>
+                <div class="input-wrap">
+                  <select id="financial_year_start_month" name="financial_year_start_month" required style="width: 100%; padding: .8rem 1.05rem .8rem 2.8rem; background: rgba(255,255,255,.03); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text); font-size: .95rem; outline: none; appearance: none; transition: border-color .2s, box-shadow .2s;">
+                    <option value="1" style="background:#0b0d1a;">January</option>
+                    <option value="2" style="background:#0b0d1a;">February</option>
+                    <option value="3" style="background:#0b0d1a;">March</option>
+                    <option value="4" selected style="background:#0b0d1a;">April</option>
+                    <option value="5" style="background:#0b0d1a;">May</option>
+                    <option value="6" style="background:#0b0d1a;">June</option>
+                    <option value="7" style="background:#0b0d1a;">July</option>
+                    <option value="8" style="background:#0b0d1a;">August</option>
+                    <option value="9" style="background:#0b0d1a;">September</option>
+                    <option value="10" style="background:#0b0d1a;">October</option>
+                    <option value="11" style="background:#0b0d1a;">November</option>
+                    <option value="12" style="background:#0b0d1a;">December</option>
+                  </select>
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
                 </div>
               </div>
             </div>
@@ -272,7 +296,7 @@
                 <tr>
                   <th>ID</th>
                   <th>Society</th>
-                  <th>Block / Wing</th>
+                  <th>Wing</th>
                   <th>Chairman Email</th>
                   <th>Registered</th>
                   <th>Status</th>

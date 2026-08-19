@@ -105,11 +105,35 @@
       max-width: 900px; margin: 0 auto;
       padding: 2.5rem 1.5rem;
     }
+    
+    .mobile-menu-btn {
+      display: none; background: none; border: none; color: var(--text);
+      font-size: 1.5rem; cursor: pointer; padding: 0.25rem 0.5rem;
+    }
+    .nav-content {
+      display: flex; align-items: center; justify-content: space-between; flex: 1;
+    }
+    .nav-left-links {
+      display: flex; align-items: center; gap: 1rem; margin-left: 1.5rem;
+    }
 
-    @media (max-width: 640px) {
-      .page { padding: 1.5rem 1rem; }
-      .navbar { padding: 0 1rem; }
-      .nav-badge { display: none; }
+    @media (max-width: 768px) {
+      .page { padding: 1.5rem 0.75rem; }
+      .navbar { flex-direction: column; height: auto; padding: 1rem; align-items: stretch; }
+      .nav-brand-container { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+      .mobile-menu-btn { display: block; }
+      .nav-content {
+        display: none; /* hidden by default */
+        flex-direction: column; align-items: stretch; gap: 1rem; margin-top: 1rem;
+      }
+      .nav-content.active { display: flex; animation: slideDown 0.2s ease-out forwards; }
+      .nav-left-links, .nav-right { flex-direction: column; align-items: stretch; gap: 0.8rem; margin: 0; }
+      .nav-badge, .btn-logout { justify-content: center; }
+    }
+    
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
   {% block extra_css %}{% endblock %}
@@ -124,26 +148,35 @@
 
   <!-- Navbar -->
   <nav class="navbar">
-    <div style="display: flex; align-items: center; gap: 1.5rem;">
+    <div class="nav-brand-container">
       <a class="nav-brand" href="#">
         <div class="nav-brand-icon">🏢</div>
         Society<span>Slip</span>
       </a>
-      <a class="nav-badge" href="/auth/user/home/" style="text-decoration: none; background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text);">
-        🏠 Home
-      </a>
+      <button class="mobile-menu-btn" onclick="document.getElementById('navContent').classList.toggle('active')">☰</button>
     </div>
-    <div class="nav-right">
-      <a class="nav-badge" href="/auth/user/profile/" style="text-decoration: none; background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text);">
-        👤 Profile
-      </a>
-      <a class="btn-logout" href="/auth/logout/">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-        Logout
-      </a>
+    
+    <div class="nav-content" id="navContent">
+      <div class="nav-left-links">
+        <a class="nav-badge" href="/auth/user/home/" style="text-decoration: none; background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text);">
+          🏠 Home
+        </a>
+        <a class="nav-badge" href="/maintenance/receipt/new/" style="text-decoration: none; background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text);">
+          🧾 Receipts
+        </a>
+      </div>
+      <div class="nav-right">
+        <a class="nav-badge" href="/auth/user/profile/" style="text-decoration: none; background: rgba(255,255,255,.05); border-color: var(--border); color: var(--text);">
+          👤 Profile
+        </a>
+        <a class="btn-logout" href="/auth/logout/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Logout
+        </a>
+      </div>
     </div>
   </nav>
 

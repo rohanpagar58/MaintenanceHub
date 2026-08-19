@@ -5,6 +5,7 @@ from functools import wraps
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
+from django.contrib.auth.hashers import make_password, check_password
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from pymongo import MongoClient, ASCENDING
@@ -149,7 +150,7 @@ def login_view(request):
         company = collection.find_one({'email': email})
         if company:
             stored_password = company.get('password', '')
-            if stored_password != password:
+            if not check_password(password, stored_password) and stored_password != password:
                 return JsonResponse({'success': False, 'error': 'Invalid password.'}, status=401)
 
             # Status check
@@ -174,7 +175,7 @@ def login_view(request):
         apartment = collection.find_one({'chairman_email': email, 'society_id': {'$exists': True}})
         if apartment:
             stored_password = apartment.get('password', '')
-            if stored_password != password:
+            if not check_password(password, stored_password) and stored_password != password:
                 return JsonResponse({'success': False, 'error': 'Invalid password.'}, status=401)
 
             # Status / active check
@@ -208,6 +209,7 @@ def login_view(request):
             request.session['apartment_society']   = apartment.get('society_name', '')
             request.session['apartment_society_id']= apartment.get('society_id', '')
             request.session['apartment_block']     = apartment.get('block', '')
+            request.session['financial_year_start_month'] = apartment.get('financial_year_start_month', 4)
 
             society_display = apartment.get('society_name', 'Your Society')
             return JsonResponse({
@@ -335,6 +337,7 @@ def register_apartment_view(request):
         chairman_mobile = data.get('chairman_mobile', '').strip()   # optional
         total_flats     = data.get('total_flats', 0)
         subscription_valid_upto = data.get('subscription_valid_upto', '').strip()
+        financial_year_start_month = data.get('financial_year_start_month', '4') # Default to April
         password        = data.get('password', '').strip()
 
         # ── Required field checks ──────────────────────────────────────────
@@ -416,7 +419,8 @@ def register_apartment_view(request):
             'chairman_mobile':         chairman_mobile,
             'total_flats':             total_flats_int,
             'subscription_valid_upto': subscription_valid_upto,
-            'password':                password,
+            'financial_year_start_month': int(financial_year_start_month),
+            'password':                make_password(password),
             'is_active':               True,
             'registered_at':           datetime.datetime.utcnow().isoformat(),
         }
@@ -614,7 +618,7 @@ def update_apartment_view(request, society_id):
         if password:
             if len(password) < 6:
                 return JsonResponse({'success': False, 'error': 'Password must be at least 6 characters.'}, status=400)
-            update_data['password'] = password
+            update_data['password'] = make_password(password)
 
         collection.update_one({'society_id': society_id}, {'$set': update_data})
 
@@ -764,6 +768,8 @@ def toggle_status_view(request, society_id):
 #  Member Management  (society chairman)
 # ─────────────────────────────────────────────
 
+from pymongo import ReturnDocument
+
 def get_next_member_id():
     """
     Atomically increment and return the next integer member ID.
@@ -775,7 +781,7 @@ def get_next_member_id():
         {'_id': 'member_id'},
         {'$inc': {'seq': 1}},
         upsert=True,
-        return_document=True,   # return the updated document
+        return_document=ReturnDocument.AFTER,   # return the updated document
     )
     return result['seq']
 

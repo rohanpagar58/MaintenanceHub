@@ -77,11 +77,17 @@
       backdrop-filter: blur(24px);
       display: flex; flex-direction: column;
       padding: 2rem 1.25rem;
-      position: fixed; top: 0; left: 0; height: 100vh;
+      position: fixed; top: 0; left: 0;
+      height: 100vh;
+      height: 100dvh;
+      overflow-y: auto;
       z-index: 10;
     }
     .sidebar-logo {
-      display: flex; align-items: center; gap: .65rem; margin-bottom: 2.5rem;
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem;
+    }
+    .sidebar-logo-brand {
+      display: flex; align-items: center; gap: .65rem;
     }
     .sidebar-logo-icon {
       width: 40px; height: 40px; border-radius: 10px;
@@ -91,6 +97,21 @@
     }
     .sidebar-logo-text { font-size: 1.15rem; font-weight: 700; letter-spacing: -.02em; }
     .sidebar-logo-text span { color: var(--accent); }
+
+    .sidebar-close {
+      display: none;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+    .sidebar-close:hover {
+      color: var(--text);
+    }
+    .sidebar-close svg {
+      width: 24px; height: 24px;
+    }
 
     .sidebar-label {
       font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
@@ -149,6 +170,9 @@
       }
       .sidebar.open {
         transform: translateX(0);
+      }
+      .sidebar-close {
+        display: block;
       }
       .main {
         margin-left: 0;
@@ -645,8 +669,16 @@
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <div class="sidebar-logo-icon">🏢</div>
-        <div class="sidebar-logo-text">Society<span>Slip</span></div>
+        <div class="sidebar-logo-brand">
+          <div class="sidebar-logo-icon">🏢</div>
+          <div class="sidebar-logo-text">Society<span>Slip</span></div>
+        </div>
+        <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       <div class="sidebar-label">Navigation</div>
@@ -1341,14 +1373,14 @@
     // Copy action
     function copyDetails(apt) {
       const details = `Society Name: ${apt.society_name}
-Society ID: #${apt.society_id}
-Block / Wing: ${apt.block || '-'}
-Chairman Email: ${apt.chairman_email}
-Chairman Mobile: ${apt.chairman_mobile || 'N/A'}
-Address: ${apt.address || 'N/A'}
-Total Flats: ${apt.total_flats ?? 'N/A'}
-Subscription Valid Upto: ${apt.subscription_valid_upto ? formatDate(apt.subscription_valid_upto) : 'N/A'}
-Registered Date: ${formatDate(apt.registered_at, true)}`;
+      Society ID: #${apt.society_id}
+      Wing: ${apt.block || '-'}
+      Chairman Email: ${apt.chairman_email}
+      Chairman Mobile: ${apt.chairman_mobile || 'N/A'}
+      Address: ${apt.address || 'N/A'}
+      Total Flats: ${apt.total_flats ?? 'N/A'}
+      Subscription Valid Upto: ${apt.subscription_valid_upto ? formatDate(apt.subscription_valid_upto) : 'N/A'}
+      Registered Date: ${formatDate(apt.registered_at, true)}`;
 
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(details).then(() => {

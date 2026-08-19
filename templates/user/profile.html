@@ -86,7 +86,7 @@
   .contact-val a { color: var(--primary-h); text-decoration: none; }
   .contact-val a:hover { text-decoration: underline; }
 
-  @media (max-width: 540px) {
+  @media (max-width: 768px) {
     .info-grid { grid-template-columns: 1fr; }
     .profile-card { padding: 1.25rem; }
   }
@@ -114,7 +114,7 @@
         <div class="info-value">{{ society_name }}</div>
       </div>
       <div class="info-item">
-        <div class="info-label">Block / Wing</div>
+        <div class="info-label">Wing</div>
         <div class="info-value">{{ apartment_block|default:"—" }}</div>
       </div>
       <div class="info-item">

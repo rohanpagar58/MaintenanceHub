@@ -1,0 +1,461 @@
+{% extends 'base/base_user.html' %}
+{% block title %}Create Maintenance Receipt — SocietySlip{% endblock %}
+
+{% block extra_css %}
+<style>
+  .card-form {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 12px 40px rgba(0,0,0,.3);
+    animation: slideUp .4s ease-out both;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: none; }
+  }
+  .form-header {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-header-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+  .form-header h2 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+  
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .full-width { grid-column: 1 / -1; }
+  
+  .f-group { display: flex; flex-direction: column; gap: .5rem; position: relative; }
+  .f-label {
+    font-size: .75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted);
+  }
+  .f-input, .f-select, .f-textarea {
+    width: 100%; padding: .8rem 1rem;
+    background: rgba(255,255,255,.04);
+    border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-size: .95rem; font-family: inherit;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .f-input:focus, .f-select:focus, .f-textarea:focus {
+    outline: none; border-color: var(--primary-h);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+  }
+  
+  /* Remove number input spinners */
+  input[type="number"]::-webkit-inner-spin-button, 
+  input[type="number"]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; margin: 0; 
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  /* Style select options */
+  .f-select option {
+    background: #111425;
+    color: var(--text);
+  }
+  
+  /* Scoped Scrollbar styles */
+  .search-dropdown::-webkit-scrollbar,
+  .f-select[multiple]::-webkit-scrollbar { width: 6px; }
+  .search-dropdown::-webkit-scrollbar-track,
+  .f-select[multiple]::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+  .search-dropdown::-webkit-scrollbar-thumb,
+  .f-select[multiple]::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+  .search-dropdown::-webkit-scrollbar-thumb:hover,
+  .f-select[multiple]::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+  
+  .searchable-select-wrap { position: relative; }
+  .search-dropdown {
+    position: absolute; top: calc(100% + 5px); left: 0; right: 0;
+    background: #111425; border: 1px solid var(--border);
+    border-radius: 10px; max-height: 250px; overflow-y: auto;
+    z-index: 100; display: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  }
+  .search-dropdown.show { display: block; }
+  .dropdown-item {
+    padding: .75rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .dropdown-item:last-child { border-bottom: none; }
+  .dropdown-item:hover { background: rgba(255,255,255,.05); }
+  .dropdown-item .flat {
+    background: rgba(99,102,241,.15); color: var(--primary-h);
+    padding: .15rem .5rem; border-radius: 6px; font-size: .75rem; font-weight: 700;
+  }
+  
+  .dynamic-section {
+    background: rgba(255,255,255,.02);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 1.5rem; margin-top: 1.5rem;
+    display: none;
+  }
+  .dynamic-section.active { display: block; animation: slideUp .3s ease-out; }
+  
+  .btn-submit {
+    width: 100%; padding: 1rem; margin-top: 2rem;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff; font-size: 1rem; font-weight: 700;
+    border: none; border-radius: 12px; cursor: pointer;
+    box-shadow: 0 8px 25px rgba(99,102,241,.4);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(99,102,241,.5); }
+  
+  @media (max-width: 768px) {
+    .card-form { padding: 1.5rem; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+  <div class="card-form">
+    <div class="form-header">
+      <div class="form-header-icon">🧾</div>
+      <h2>Issue Maintenance Receipt</h2>
+    </div>
+
+    <form id="receiptForm" onsubmit="submitForm(event)">
+      {% csrf_token %}
+      <div class="form-grid">
+        
+        <!-- Member Search -->
+        <div class="f-group full-width">
+          <label class="f-label">Select Member <span style="color:var(--error)">*</span></label>
+          <div class="searchable-select-wrap">
+            <input type="hidden" id="member_id" name="member_id" required>
+            <input type="text" id="member_search" class="f-input" placeholder="Search by name or flat number..." autocomplete="off">
+            <div class="search-dropdown" id="memberDropdown">
+              <!-- populated via JS -->
+            </div>
+          </div>
+        </div>
+        
+        <div class="f-group">
+          <label class="f-label">Amount <span style="color:var(--error)">*</span></label>
+          <input type="number" step="0.01" class="f-input" id="amount" name="amount" placeholder="0.00" required>
+        </div>
+        
+        <div class="f-group">
+          <label class="f-label">Payment Date <span style="color:var(--error)">*</span></label>
+          <input type="date" class="f-input" id="payment_date" name="payment_date" required>
+        </div>
+        
+        <div class="f-group">
+          <label class="f-label">Payment Mode <span style="color:var(--error)">*</span></label>
+          <select class="f-select" id="payment_mode" name="payment_mode" required>
+            <option value="">-- Select Mode --</option>
+            <option value="Cash">Cash</option>
+            <option value="Online">Online Transfer</option>
+            <option value="Cheque">Cheque</option>
+            <option value="UPI">UPI</option>
+          </select>
+        </div>
+        
+        <div class="f-group">
+          <label class="f-label">Duration Mode <span style="color:var(--error)">*</span></label>
+          <select class="f-select" id="duration_mode" name="duration_mode" required onchange="handleDurationChange()">
+            <option value="">-- Select Duration --</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Quarterly">Quarterly</option>
+            <option value="Six-Month">Six Month</option>
+            <option value="Yearly">Yearly</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Dynamic Sections -->
+      <div id="dynamicSections">
+        <!-- Monthly -->
+        <div id="sec-Monthly" class="dynamic-section form-grid">
+          <div class="f-group">
+            <label class="f-label">Select Month(s)</label>
+            <select class="f-select" id="dyn_monthly_month" multiple style="height: 120px;">
+              <!-- generated via JS -->
+            </select>
+            <small style="color:var(--muted); font-size:.75rem; margin-top:.3rem;">Hold Ctrl/Cmd to select multiple</small>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Year</label>
+            <input type="number" class="f-input" id="dyn_monthly_year" placeholder="YYYY">
+          </div>
+        </div>
+        
+        <!-- Quarterly -->
+        <div id="sec-Quarterly" class="dynamic-section form-grid">
+          <div class="f-group">
+            <label class="f-label">Select Quarter</label>
+            <select class="f-select" id="dyn_quarterly_q" onchange="toggleCustomQ()">
+              <option value="Q1">Q1</option>
+              <option value="Q2">Q2</option>
+              <option value="Q3">Q3</option>
+              <option value="Q4">Q4</option>
+              <option value="Custom">Custom (Select 3 months)</option>
+            </select>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Year</label>
+            <input type="number" class="f-input" id="dyn_quarterly_year" placeholder="YYYY">
+          </div>
+          <div class="f-group full-width" id="custom_q_wrap" style="display:none;">
+            <label class="f-label">Custom Quarter (Select exactly 3 months)</label>
+            <select class="f-select" id="dyn_quarterly_custom" multiple style="height: 120px;"></select>
+          </div>
+        </div>
+
+        <!-- Six-Month -->
+        <div id="sec-Six-Month" class="dynamic-section form-grid">
+          <div class="f-group">
+            <label class="f-label">Select Half</label>
+            <select class="f-select" id="dyn_six_half" onchange="toggleCustomH()">
+              <option value="H1">H1 (First Half)</option>
+              <option value="H2">H2 (Second Half)</option>
+              <option value="Custom">Custom (Select 6 months)</option>
+            </select>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Year</label>
+            <input type="number" class="f-input" id="dyn_six_year" placeholder="YYYY">
+          </div>
+          <div class="f-group full-width" id="custom_h_wrap" style="display:none;">
+            <label class="f-label">Custom Half (Select exactly 6 months)</label>
+            <select class="f-select" id="dyn_six_custom" multiple style="height: 120px;"></select>
+          </div>
+        </div>
+        
+        <!-- Yearly -->
+        <div id="sec-Yearly" class="dynamic-section form-grid">
+          <div class="f-group">
+            <label class="f-label">Year Type</label>
+            <select class="f-select" id="dyn_yearly_type" onchange="updateYearlyPlaceholder()">
+              <option value="Single">Single Year (e.g. 2026)</option>
+              <option value="Financial" selected>Financial Year (e.g. 2026-2027)</option>
+            </select>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Year</label>
+            <input type="text" class="f-input" id="dyn_yearly_val" placeholder="2026-2027">
+          </div>
+        </div>
+      </div>
+      
+      <div class="f-group full-width" style="margin-top: 1.5rem;">
+        <label class="f-label">Remarks (Optional)</label>
+        <textarea class="f-textarea" id="remarks" name="remarks" rows="3" placeholder="Additional notes about this payment..."></textarea>
+      </div>
+      
+      <button type="submit" class="btn-submit" id="submitBtn">Generate Receipt</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Member Data
+  const members = {{ members|safe }};
+  const searchInput = document.getElementById('member_search');
+  const searchDropdown = document.getElementById('memberDropdown');
+  const memberIdInput = document.getElementById('member_id');
+  
+  // Financial Year Start (1 = Jan, 4 = Apr)
+  const fyStart = {{ financial_year_start_month }};
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  
+  // Default Payment Date
+  document.getElementById('payment_date').value = new Date().toISOString().split('T')[0];
+  const currentYear = new Date().getFullYear();
+  document.getElementById('dyn_monthly_year').value = currentYear;
+  document.getElementById('dyn_quarterly_year').value = currentYear;
+  document.getElementById('dyn_six_year').value = currentYear;
+  document.getElementById('dyn_yearly_val').value = `${currentYear}-${currentYear+1}`;
+
+  // Prevent scroll wheel from modifying number inputs
+  document.addEventListener('wheel', function(e) {
+    if (document.activeElement.type === 'number') {
+      document.activeElement.blur();
+    }
+  });
+
+  // Member Search Logic
+  function renderDropdown(list) {
+    searchDropdown.innerHTML = '';
+    if (list.length === 0) {
+      searchDropdown.innerHTML = '<div class="dropdown-item" style="color:var(--muted)">No members found</div>';
+      return;
+    }
+    list.forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'dropdown-item';
+      div.innerHTML = `<span>${m.name}</span> <span class="flat">${m.flat_number}</span>`;
+      div.onclick = () => {
+        memberIdInput.value = m.id;
+        searchInput.value = `${m.name} (Flat: ${m.flat_number})`;
+        searchDropdown.classList.remove('show');
+      };
+      searchDropdown.appendChild(div);
+    });
+  }
+  
+  searchInput.addEventListener('focus', () => {
+    searchDropdown.classList.add('show');
+    renderDropdown(members);
+  });
+  
+  searchInput.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    const filtered = members.filter(m => m.name.toLowerCase().includes(q) || m.flat_number.toLowerCase().includes(q));
+    renderDropdown(filtered);
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (!searchDropdown.contains(e.target) && e.target !== searchInput) {
+      searchDropdown.classList.remove('show');
+    }
+  });
+
+  // Populate Month Options based on FY start
+  function populateMonthSelects() {
+    const selects = ['dyn_monthly_month', 'dyn_quarterly_custom', 'dyn_six_custom'];
+    let optionsHTML = '';
+    for(let i=0; i<12; i++) {
+      let mIdx = (fyStart - 1 + i) % 12;
+      optionsHTML += `<option value="${mIdx+1}">${monthNames[mIdx]}</option>`;
+    }
+    selects.forEach(id => {
+      document.getElementById(id).innerHTML = optionsHTML;
+    });
+  }
+  populateMonthSelects();
+
+  // Populate Q1/Q2/Q3/Q4 Labels
+  function updateQHLabels() {
+    const qSelect = document.getElementById('dyn_quarterly_q');
+    const hSelect = document.getElementById('dyn_six_half');
+    
+    const getMonthRange = (startOffset, count) => {
+      let m1 = (fyStart - 1 + startOffset) % 12;
+      let m2 = (fyStart - 1 + startOffset + count - 1) % 12;
+      return `${monthNames[m1].substring(0,3)} - ${monthNames[m2].substring(0,3)}`;
+    };
+    
+    qSelect.options[0].text = `Q1 (${getMonthRange(0, 3)})`;
+    qSelect.options[1].text = `Q2 (${getMonthRange(3, 3)})`;
+    qSelect.options[2].text = `Q3 (${getMonthRange(6, 3)})`;
+    qSelect.options[3].text = `Q4 (${getMonthRange(9, 3)})`;
+    
+    hSelect.options[0].text = `H1 (${getMonthRange(0, 6)})`;
+    hSelect.options[1].text = `H2 (${getMonthRange(6, 6)})`;
+  }
+  updateQHLabels();
+
+  // Dynamic UI toggles
+  function handleDurationChange() {
+    document.querySelectorAll('.dynamic-section').forEach(el => el.classList.remove('active'));
+    const val = document.getElementById('duration_mode').value;
+    if (val) {
+      document.getElementById(`sec-${val}`).classList.add('active');
+    }
+  }
+
+  function toggleCustomQ() {
+    const val = document.getElementById('dyn_quarterly_q').value;
+    document.getElementById('custom_q_wrap').style.display = val === 'Custom' ? 'block' : 'none';
+  }
+  function toggleCustomH() {
+    const val = document.getElementById('dyn_six_half').value;
+    document.getElementById('custom_h_wrap').style.display = val === 'Custom' ? 'block' : 'none';
+  }
+  function updateYearlyPlaceholder() {
+    const val = document.getElementById('dyn_yearly_type').value;
+    const input = document.getElementById('dyn_yearly_val');
+    input.placeholder = val === 'Single' ? 'e.g. 2026' : 'e.g. 2026-2027';
+    input.value = val === 'Single' ? currentYear : `${currentYear}-${currentYear+1}`;
+  }
+
+  // Submission Logic
+  function submitForm(e) {
+    e.preventDefault();
+    if (!memberIdInput.value) { alert('Please select a member from the dropdown.'); return; }
+    
+    const mode = document.getElementById('duration_mode').value;
+    let details = {};
+    
+    if (mode === 'Monthly') {
+      const selected = Array.from(document.getElementById('dyn_monthly_month').selectedOptions).map(o => o.value);
+      if(selected.length===0) { alert('Select at least one month.'); return; }
+      details = { months: selected, year: document.getElementById('dyn_monthly_year').value };
+    } else if (mode === 'Quarterly') {
+      const q = document.getElementById('dyn_quarterly_q').value;
+      if (q === 'Custom') {
+        const selected = Array.from(document.getElementById('dyn_quarterly_custom').selectedOptions).map(o => o.value);
+        if(selected.length !== 3) { alert('Please select exactly 3 months for a custom quarter.'); return; }
+        details = { type: 'Custom', months: selected, year: document.getElementById('dyn_quarterly_year').value };
+      } else {
+        details = { type: q, year: document.getElementById('dyn_quarterly_year').value };
+      }
+    } else if (mode === 'Six-Month') {
+      const h = document.getElementById('dyn_six_half').value;
+      if (h === 'Custom') {
+        const selected = Array.from(document.getElementById('dyn_six_custom').selectedOptions).map(o => o.value);
+        if(selected.length !== 6) { alert('Please select exactly 6 months for a custom half.'); return; }
+        details = { type: 'Custom', months: selected, year: document.getElementById('dyn_six_year').value };
+      } else {
+        details = { type: h, year: document.getElementById('dyn_six_year').value };
+      }
+    } else if (mode === 'Yearly') {
+      details = {
+        type: document.getElementById('dyn_yearly_type').value,
+        year: document.getElementById('dyn_yearly_val').value
+      };
+      if(!details.year) { alert('Please enter the year.'); return; }
+    }
+    
+    const payload = {
+      member_id: memberIdInput.value,
+      amount: document.getElementById('amount').value,
+      payment_date: document.getElementById('payment_date').value,
+      payment_mode: document.getElementById('payment_mode').value,
+      duration_mode: mode,
+      duration_details: details,
+      remarks: document.getElementById('remarks').value
+    };
+    
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = 'Processing...'; btn.disabled = true;
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch('/maintenance/receipt/save/', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify(payload)
+    }).then(res => res.json()).then(data => {
+      if(data.success) {
+        alert(data.message);
+        window.location.reload();
+      } else {
+        alert(data.error);
+        btn.innerHTML = 'Generate Receipt'; btn.disabled = false;
+      }
+    }).catch(err => {
+      alert('Network error. Please try again.');
+      btn.innerHTML = 'Generate Receipt'; btn.disabled = false;
+    });
+  }
+</script>
+{% endblock %}

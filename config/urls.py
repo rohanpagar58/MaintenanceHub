@@ -22,4 +22,5 @@ urlpatterns = [
     path('',      RedirectView.as_view(url='/auth/', permanent=False)),
     path('admin/', admin.site.urls),
     path('auth/', include('apps.super_user.urls', namespace='super_user')),
+    path('maintenance/', include('apps.maintenance.urls', namespace='maintenance')),
 ]

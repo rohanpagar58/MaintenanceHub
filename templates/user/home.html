@@ -200,11 +200,13 @@
       padding: .65rem 1.5rem; text-align: left;
       border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,.02);
+      white-space: nowrap;
     }
     .members-table td {
       padding: .75rem 1.5rem; font-size: .88rem;
       border-bottom: 1px solid rgba(255,255,255,.04);
       vertical-align: middle;
+      white-space: nowrap;
     }
     .members-table tbody tr:last-child td { border-bottom: none; }
     .members-table tbody tr { transition: background .15s; }
@@ -225,11 +227,48 @@
       transition: background .2s, border-color .2s;
     }
     .btn-delete-member:hover { background: rgba(248,113,113,.22); border-color: rgba(248,113,113,.5); }
+    
+    .btn-history {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.25);
+      color: var(--primary-h); padding: .35rem .75rem;
+      border-radius: 7px; font-size: .78rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-history:hover { background: rgba(99,102,241,.22); border-color: rgba(99,102,241,.5); }
+    .history-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .history-table th {
+      font-size: .7rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      padding: .5rem; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .history-table td {
+      padding: .6rem .5rem; font-size: .85rem;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    
     .no-members {
       text-align: center; color: var(--muted);
       padding: 2.5rem 1rem; font-size: .9rem;
     }
+    
+    .table-responsive { width: 100%; overflow-x: auto; }
+    
+    .modal-title-text { display: flex; align-items: center; white-space: nowrap; }
+    .history-member-name { color: var(--primary-h); }
+    .history-title-sep { margin: 0 0.4rem; }
 
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.8rem; }
+      .stats-row { flex-direction: column; }
+      .modal { padding: 1.5rem; width: 95%; max-width: 95%; }
+      .modal-body { max-height: 60vh; }
+      
+      .modal-title { align-items: flex-start; }
+      .modal-title-text { flex-direction: column; align-items: flex-start; }
+      .history-title-sep { display: none; }
+      .history-member-name { font-size: 0.85em; font-weight: 500; margin-top: 0.15rem; }
+    }
 </style>
 {% endblock %}
 
@@ -266,37 +305,78 @@
           <span>👤</span> Add Member
         </button>
       </div>
-      <table class="members-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>Flat No.</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="membersTableBody">
-          {% for m in members %}
-          <tr id="row-{{ m.id }}">
-            <td style="color:var(--muted)">{{ m.index_id }}</td>
-            <td>{{ m.name }}</td>
-            <td><span class="flat-badge">{{ m.flat_number }}</span></td>
-            <td>
-              <button class="btn-delete-member" onclick="deleteMember('{{ m.id }}', '{{ m.name }}')">
-                🗑️ Delete
-              </button>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="4" class="no-members">📢 No members yet. Click “Add Member” to get started.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Flat No.</th>
+              <th>History</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="membersTableBody">
+            {% for m in members %}
+            <tr id="row-{{ m.id }}">
+              <td style="color:var(--muted)">{{ m.index_id }}</td>
+              <td>{{ m.name }}</td>
+              <td><span class="flat-badge">{{ m.flat_number }}</span></td>
+              <td>
+                <button class="btn-history" onclick="openHistoryModal('{{ m.id }}', '{{ m.name|escapejs }}')" title="View Receipt History">
+                  📄
+                </button>
+              </td>
+              <td>
+                <button class="btn-delete-member" onclick="deleteMember('{{ m.id }}', '{{ m.name|escapejs }}')">
+                  🗑️ Delete
+                </button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="no-members">📢 No members yet. Click “Add Member” to get started.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
 
 
     <p class="footer-note">SocietySlip &copy; 2026 &mdash; Powered by smart society management</p>
+  </div>
+
+  <!-- Receipt History Modal -->
+  <div class="modal-overlay" id="historyModal" onclick="if(event.target===this) closeHistoryModal()">
+    <div class="modal" style="max-width: 600px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <div class="modal-title-icon">📄</div>
+          <div class="modal-title-text">
+            <span>Receipt History</span>
+            <span class="history-title-sep">-</span>
+            <span id="historyMemberName" class="history-member-name"></span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeHistoryModal()">×</button>
+      </div>
+      <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Receipt No</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Duration</th>
+              <th>Mode</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- Add Member Modal -->
@@ -343,14 +423,20 @@
       subDaysVal.textContent = diff >= 0 ? diff : 0;
 
       if (diff < 0) {
-        subBadge.className = 'sub-badge expired';
-        subBadge.textContent = `Expired (${subDateStr})`;
+        if (subBadge) {
+          subBadge.className = 'sub-badge expired';
+          subBadge.textContent = `Expired (${subDateStr})`;
+        }
       } else if (diff <= 30) {
-        subBadge.className = 'sub-badge expiring';
-        subBadge.textContent = `${subDateStr} ⚠ Expiring Soon`;
+        if (subBadge) {
+          subBadge.className = 'sub-badge expiring';
+          subBadge.textContent = `${subDateStr} ⚠ Expiring Soon`;
+        }
       } else {
-        subBadge.className = 'sub-badge active';
-        subBadge.textContent = subDateStr;
+        if (subBadge) {
+          subBadge.className = 'sub-badge active';
+          subBadge.textContent = subDateStr;
+        }
       }
     } else {
       subDaysVal.textContent = '—';
@@ -402,7 +488,16 @@
             <td style="color:var(--muted)">${data.member_id}</td>
             <td>${fd.get('name')}</td>
             <td><span class="flat-badge">${fd.get('flat_number')}</span></td>
-            <td><button class="btn-delete-member" onclick="deleteMember('${data.member_id_str}', '${fd.get('name')}')">🗑️ Delete</button></td>
+            <td>
+              <button class="btn-history" onclick="openHistoryModal('${data.member_id_str}', '${fd.get('name')}')" title="View Receipt History">
+                📄
+              </button>
+            </td>
+            <td>
+              <button class="btn-delete-member" onclick="deleteMember('${data.member_id_str}', '${fd.get('name')}')">
+                🗑️ Delete
+              </button>
+            </td>
           `;
           tbody.appendChild(row);
           // Update count badge
@@ -445,7 +540,7 @@
               // Show empty state if no rows left
               if (newCount === 0) {
                 document.getElementById('membersTableBody').innerHTML =
-                  '<tr><td colspan="4" class="no-members">\ud83d\udce2 No members yet. Click \u201cAdd Member\u201d to get started.</td></tr>';
+                  '<tr><td colspan="5" class="no-members">\ud83d\udce2 No members yet. Click \u201cAdd Member\u201d to get started.</td></tr>';
               }
             }, 300);
           }
@@ -454,6 +549,65 @@
         }
       } catch {
         alert('Network error. Please try again.');
+      }
+    }
+
+    // Receipt History Modal Logic
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.remove('open');
+    }
+
+    async function openHistoryModal(memberId, memberName) {
+      document.getElementById('historyMemberName').textContent = memberName;
+      document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem;">Loading...</td></tr>';
+      document.getElementById('historyModal').classList.add('open');
+      
+      try {
+        const res = await fetch(`/maintenance/receipt/history/${memberId}/`);
+        const data = await res.json();
+        
+        if (data.success) {
+          if (data.receipts.length === 0) {
+            document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color:var(--muted);">No receipts found for this member.</td></tr>';
+            return;
+          }
+          
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const formatDuration = (mode, details) => {
+            if (!details) return mode;
+            if (mode === 'Monthly') {
+              const mStr = (details.months || []).map(m => monthNames[m-1]).join(', ');
+              return `${mode}<br><small style="color:var(--muted)">${mStr} ${details.year}</small>`;
+            } else if (mode === 'Quarterly' || mode === 'Six-Month') {
+              if (details.type === 'Custom') {
+                const mStr = (details.months || []).map(m => monthNames[m-1]).join(', ');
+                return `${mode}<br><small style="color:var(--muted)">${mStr} ${details.year}</small>`;
+              }
+              return `${mode}<br><small style="color:var(--muted)">${details.type} ${details.year}</small>`;
+            } else if (mode === 'Yearly') {
+              return `${mode}<br><small style="color:var(--muted)">${details.year}</small>`;
+            }
+            return mode;
+          };
+          
+          let html = '';
+          data.receipts.forEach(r => {
+            html += `
+              <tr>
+                <td>#${String(r.receipt_no).padStart(4, '0')}</td>
+                <td>${r.payment_date}</td>
+                <td>₹${parseFloat(r.amount).toFixed(2)}</td>
+                <td>${formatDuration(r.duration_mode, r.duration_details)}</td>
+                <td><span class="flat-badge">${r.payment_mode}</span></td>
+              </tr>
+            `;
+          });
+          document.getElementById('historyTableBody').innerHTML = html;
+        } else {
+          document.getElementById('historyTableBody').innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 2rem; color:var(--error);">${data.error}</td></tr>`;
+        }
+      } catch (e) {
+        document.getElementById('historyTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color:var(--error);">Network Error</td></tr>';
       }
     }
   </script>
