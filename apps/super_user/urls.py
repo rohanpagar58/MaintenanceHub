@@ -12,6 +12,7 @@ urlpatterns = [
     path('register-apartment/list/',                      views.get_apartments_list_view, name='get_apartments_list'),
     path('register-apartment/update/<str:society_id>/',   views.update_apartment_view,   name='update_apartment'),
     path('register-apartment/check-duplicate/',           views.check_duplicate_view,    name='check_duplicate'),
+    path('register-apartment/signature/<str:society_id>/', views.get_apartment_signature_view, name='get_apartment_signature'),
     path('register-apartment/delete/<str:society_id>/',   views.delete_apartment_view,   name='delete_apartment'),
     path('register-apartment/toggle-status/<str:society_id>/', views.toggle_status_view, name='toggle_status'),
     path('user/home/',                                         views.user_home_view,       name='user_home'),

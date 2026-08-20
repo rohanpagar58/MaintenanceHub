@@ -8,6 +8,7 @@ from bson.errors import InvalidId
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
 from pymongo import MongoClient, ASCENDING, ReturnDocument
@@ -130,8 +131,8 @@ def ensure_indexes():
 # ─────────────────────────────────────────────
 
 def super_user_required(view_func):
-    """Redirect to login if the user is not authenticated as super_user."""
     @wraps(view_func)
+    @never_cache
     def wrapper(request, *args, **kwargs):
         if not request.session.get('is_super_user'):
             return redirect('/auth/')
@@ -267,8 +268,8 @@ def logout_view(request):
 # ─────────────────────────────────────────────
 
 def apartment_user_required(view_func):
-    """Redirect to login if the user is not authenticated as an apartment user."""
     @wraps(view_func)
+    @never_cache
     def wrapper(request, *args, **kwargs):
         if not request.session.get('is_apartment_user'):
             return redirect('/auth/')
@@ -495,7 +496,13 @@ def get_apartments_list_view(request):
 
         # Single fetch of every registered apartment; stats are always computed
         # over the full set, and the optional search filter narrows the list in Python.
-        all_docs = list(collection.find({'society_id': {'$exists': True}}))
+        # signature_image can be several MB (raw uploaded photos) and isn't shown
+        # in the list/table, so it's excluded here and fetched on demand per-record
+        # (see get_apartment_signature_view) only when a specific apartment is edited.
+        all_docs = list(collection.find(
+            {'society_id': {'$exists': True}},
+            {'signature_image': 0},
+        ))
 
         unique_societies = set()
         unique_chairmen = set()
@@ -531,7 +538,6 @@ def get_apartments_list_view(request):
                 'subscription_valid_upto': doc.get('subscription_valid_upto', ''),
                 'registered_at': doc.get('registered_at', ''),
                 'is_active': doc.get('is_active', True),  # default True for old records
-                'signature_image': doc.get('signature_image', ''),
             }
             for doc in matching_docs
         ]
@@ -714,6 +720,26 @@ def check_duplicate_view(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@super_user_required
+@require_http_methods(["GET"])
+def get_apartment_signature_view(request, society_id):
+    """
+    Fetch just the signature_image for one apartment, on demand.
+    Kept separate from get_apartments_list_view because signature images can be
+    several MB each; embedding them in the bulk list would bloat every page load.
+    """
+    try:
+        collection = get_mongo_collection()
+        doc = collection.find_one({'society_id': society_id}, {'signature_image': 1})
+        if not doc:
+            return JsonResponse({'success': False, 'error': 'Apartment record not found.'}, status=404)
+        return JsonResponse({'success': True, 'signature_image': doc.get('signature_image', '')})
+    except PyMongoError:
+        return JsonResponse({'success': False, 'error': 'Database error while fetching signature.'}, status=500)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Server error: {str(e)}'}, status=500)
 
 
 @super_user_required

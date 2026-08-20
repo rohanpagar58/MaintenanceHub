@@ -194,8 +194,8 @@
       /* Dashboard Mobile Rules */
       .directory-panel { padding: 1.25rem 1rem; max-width: 100%; overflow-x: hidden; }
       .directory-header { flex-direction: column; align-items: stretch; gap: 0.8rem; }
-      .directory-actions { flex-direction: row; justify-content: space-between; width: 100%; gap: 0.5rem; }
-      .search-box { flex: 1; min-width: 0; }
+      .directory-actions { flex-direction: row; flex-wrap: wrap; justify-content: space-between; width: 100%; gap: 0.5rem; }
+      .search-box { flex: 1 1 100%; min-width: 0; }
       .search-box input { width: 100%; }
       .cards-grid { grid-template-columns: 1fr; }
       
@@ -311,7 +311,7 @@
       }
     }
 
-    .form-group { display: flex; flex-direction: column; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; margin-bottom: 1rem; min-width: 0; }
     label {
       font-size: .75rem; font-weight: 700; letter-spacing: .05em;
       text-transform: uppercase; color: var(--muted); margin-bottom: .45rem;
@@ -782,7 +782,9 @@
       document.getElementById('navRegisterBtn').classList.toggle('active', tabId === 'register');
       document.getElementById('tabDashboard').style.display = tabId === 'dashboard' ? 'flex' : 'none';
       document.getElementById('tabRegister').style.display = tabId === 'register' ? 'block' : 'none';
-      
+      const statsGrid = document.getElementById('statsGrid');
+      if (statsGrid) statsGrid.style.display = tabId === 'dashboard' ? 'grid' : 'none';
+
       // Close sidebar on mobile when navigating
       if (window.innerWidth <= 992) {
         document.querySelector('.sidebar').classList.remove('open');
@@ -1588,20 +1590,36 @@
           document.getElementById('financial_year_start_month').value = apt.financial_year_start_month;
       }
       
+      // Signature images can be several MB and aren't included in the bulk apartment
+      // list (see get_apartments_list_view) to keep the dashboard fast; fetch this one
+      // apartment's signature separately, only now that it's actually being edited.
       const sigPreview = document.getElementById('signature_preview');
       const fileChosen = document.getElementById('file-chosen');
       if (sigPreview) {
-          if (apt.signature_image) {
-              sigPreview.src = apt.signature_image;
-              sigPreview.style.display = 'block';
-              if (fileChosen) fileChosen.textContent = 'Existing signature loaded';
-          } else {
-              sigPreview.src = '';
-              sigPreview.style.display = 'none';
-              if (fileChosen) fileChosen.textContent = 'No file chosen';
-          }
+          sigPreview.src = '';
+          sigPreview.style.display = 'none';
       }
-      
+      if (fileChosen) fileChosen.textContent = 'Loading signature…';
+      if (submitBtn) submitBtn.disabled = true;
+
+      fetch(`/auth/register-apartment/signature/${encodeURIComponent(id)}/`)
+        .then(r => r.json())
+        .then(data => {
+          if (state.editSocietyId !== id) return; // switched records while this was in flight
+          const sig = (data && data.success) ? (data.signature_image || '') : '';
+          if (sigPreview) {
+            sigPreview.src = sig;
+            sigPreview.style.display = sig ? 'block' : 'none';
+          }
+          if (fileChosen) fileChosen.textContent = sig ? 'Existing signature loaded' : 'No file chosen';
+        })
+        .catch(() => {
+          if (fileChosen) fileChosen.textContent = 'No file chosen';
+        })
+        .finally(() => {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+
       // Ensure subscription_valid_upto is correctly formatted for date input
       let dateVal = apt.subscription_valid_upto || '';
       if (dateVal && dateVal.includes('T')) {
