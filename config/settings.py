@@ -21,7 +21,22 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.107','192.168.0.108']
+ALLOWED_HOSTS = [
+    h.strip() for h in os.environ.get(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1,192.168.1.107,192.168.0.108',
+    ).split(',') if h.strip()
+]
+
+# Render sets this automatically for every deployed service.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}']
+
+# Render terminates TLS at the proxy and forwards plain HTTP; this tells Django
+# the original request was HTTPS so secure-cookie / CSRF checks behave correctly.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Allow larger request bodies (e.g. for base64 image uploads)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520  # 20 MB
@@ -42,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -101,8 +117,26 @@ USE_TZ        = True
 # ─── Static Files ────────────────────────────────────────────────────────────
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ─── Sessions ────────────────────────────────────────────────────────────────
+
+# All login state (super_user / apartment_user) lives in the session, and the
+# app's real data already lives in MongoDB — signed cookies avoid depending on
+# db.sqlite3, whose contents don't persist across Render deploys/restarts.
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 
 
 # ─── MongoDB ─────────────────────────────────────────────────────────────────
