@@ -1,9 +1,11 @@
 import json
+import re
 import datetime
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import HttpResponse, Http404, JsonResponse
 from django.views.decorators.http import require_http_methods
-from apps.super_user.views import apartment_user_required, get_mongo_db, get_user_collection
+from apps.super_user.views import apartment_user_required, get_mongo_db, get_mongo_collection, get_user_collection
+from apps.maintenance.pdf_generator import build_duration_display, generate_receipt_pdf
 from bson.objectid import ObjectId
 
 def get_receipt_collection():
@@ -138,80 +140,34 @@ def member_receipt_history_view(request, member_id):
 @require_http_methods(["GET"])
 def download_receipt_pdf_view(request, receipt_id):
     try:
-        from django.http import HttpResponse, Http404
         society_id = request.session.get('apartment_society_id')
         receipt_col = get_receipt_collection()
-        
+
         receipt = receipt_col.find_one({'_id': ObjectId(receipt_id), 'society_id': society_id})
         if not receipt:
             raise Http404("Receipt not found")
-            
-        from apps.super_user.views import get_mongo_collection
+
         society = get_mongo_collection().find_one({'society_id': society_id})
         if not society:
             raise Http404("Society not found")
-            
-        from apps.maintenance.pdf_generator import generate_receipt_pdf
+
         pdf_buffer = generate_receipt_pdf(receipt, society)
-        
+
         response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
-        
+
         # Build safe filename from member name and duration details
-        import re
         member_name = str(receipt.get('member_name', 'Member')).strip()
         safe_member_name = re.sub(r'[^A-Za-z0-9_.-]', '', member_name.replace(' ', '_'))
-        
-        duration_mode = receipt.get('duration_mode', '')
-        details = receipt.get('duration_details', {})
-        year_val = details.get('year', '')
-        if year_val and '-' in str(year_val):
-            parts = str(year_val).split('-')
-            if len(parts) == 2 and len(parts[1]) == 4:
-                year_val = f"{parts[0]}-{parts[1][2:]}"
 
-        month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        display_str = duration_mode
-
-        if duration_mode == 'Monthly':
-            months = details.get('months', [])
-            m_str = "-".join([month_names[int(m)-1] for m in months if str(m).isdigit() and 1 <= int(m) <= 12])
-            display_str = f"{m_str}_{year_val}"
-        elif duration_mode in ['Quarterly', 'Six-Month']:
-            dtype = details.get('type', '')
-            if dtype == 'Custom':
-                months = details.get('months', [])
-                m_str = "-".join([month_names[int(m)-1] for m in months if str(m).isdigit() and 1 <= int(m) <= 12])
-                display_str = f"{m_str}_{year_val}"
-            else:
-                fy_start = int(society.get('financial_year_start_month', 4))
-                start_offset = 0
-                count = 0
-                if dtype == 'Q1': start_offset, count = 0, 3
-                elif dtype == 'Q2': start_offset, count = 3, 3
-                elif dtype == 'Q3': start_offset, count = 6, 3
-                elif dtype == 'Q4': start_offset, count = 9, 3
-                elif dtype == 'H1': start_offset, count = 0, 6
-                elif dtype == 'H2': start_offset, count = 6, 6
-                
-                if count > 0:
-                    m1 = (fy_start - 1 + start_offset) % 12
-                    m2 = (fy_start - 1 + start_offset + count - 1) % 12
-                    display_str = f"{month_names[m1]}-{month_names[m2]}_{year_val}"
-                else:
-                    display_str = f"{dtype}_{year_val}"
-        elif duration_mode == 'Yearly':
-            fy_start = int(society.get('financial_year_start_month', 4))
-            fy_m = month_names[fy_start - 1]
-            display_str = f"{fy_m}_{year_val}"
-        else:
-            display_str = f"{duration_mode}_{year_val}"
-
+        display_str = build_duration_display(receipt, society, month_sep="-", year_sep="_")
         safe_duration = re.sub(r'[^A-Za-z0-9_.-]', '', display_str)
         filename = f"{safe_member_name}_{safe_duration}.pdf"
         
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
         
+    except Http404:
+        raise
     except ImportError as ie:
         return JsonResponse({'success': False, 'error': str(ie)}, status=501)
     except Exception as e:

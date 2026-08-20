@@ -1,4 +1,3 @@
-import os
 from io import BytesIO
 import datetime
 
@@ -6,6 +5,7 @@ try:
     from reportlab.pdfgen import canvas
     from reportlab.lib.colors import HexColor
     from reportlab.lib.pagesizes import landscape, A4
+    from reportlab.lib.utils import simpleSplit
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
@@ -33,6 +33,55 @@ def number_to_words(n):
         return convert(num // 10000000) + " Crore" + (" " + convert(num % 10000000) if num % 10000000 != 0 else "")
 
     return convert(int(n)) + " Rupee only"
+
+
+MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def build_duration_display(receipt, society, month_sep=", ", year_sep=" "):
+    """
+    Build a human-readable string describing a receipt's billing duration,
+    e.g. "Apr, May 2026" or (for filenames) "Apr-May_2026".
+    """
+    duration_mode = receipt.get('duration_mode', '')
+    details = receipt.get('duration_details', {})
+    year_val = details.get('year', '')
+    if year_val and '-' in str(year_val):
+        # shorten 2026-2027 to 2026-27
+        parts = str(year_val).split('-')
+        if len(parts) == 2 and len(parts[1]) == 4:
+            year_val = f"{parts[0]}-{parts[1][2:]}"
+
+    def months_str(months):
+        return month_sep.join(
+            MONTH_NAMES[int(m) - 1] for m in months if str(m).isdigit() and 1 <= int(m) <= 12
+        )
+
+    if duration_mode == 'Monthly':
+        return f"{months_str(details.get('months', []))}{year_sep}{year_val}"
+
+    if duration_mode in ('Quarterly', 'Six-Month'):
+        dtype = details.get('type', '')
+        if dtype == 'Custom':
+            return f"{months_str(details.get('months', []))}{year_sep}{year_val}"
+
+        fy_start = int(society.get('financial_year_start_month', 4))
+        start_offset, count = {
+            'Q1': (0, 3), 'Q2': (3, 3), 'Q3': (6, 3), 'Q4': (9, 3),
+            'H1': (0, 6), 'H2': (6, 6),
+        }.get(dtype, (0, 0))
+
+        if count > 0:
+            m1 = (fy_start - 1 + start_offset) % 12
+            m2 = (fy_start - 1 + start_offset + count - 1) % 12
+            return f"{MONTH_NAMES[m1]}-{MONTH_NAMES[m2]}{year_sep}{year_val}"
+        return f"{dtype}{year_sep}{year_val}"
+
+    if duration_mode == 'Yearly':
+        fy_start = int(society.get('financial_year_start_month', 4))
+        return f"{MONTH_NAMES[fy_start - 1]}{year_sep}{year_val}"
+
+    return f"{duration_mode}{year_sep}{year_val}"
 
 
 def generate_receipt_pdf(receipt, society):
@@ -81,7 +130,6 @@ def generate_receipt_pdf(receipt, society):
     
     c.setFont("Helvetica", 9)
     address = society.get('address', '')
-    from reportlab.lib.utils import simpleSplit
     lines = simpleSplit(address, "Helvetica", 9, box_w - 10)
     y_offset = 22 if len(lines) > 1 else 16
     for line in lines[:2]:  # at most 2 lines
@@ -97,53 +145,7 @@ def generate_receipt_pdf(receipt, society):
     c.setStrokeColor(orange)
     c.rect(right_col, height - 60, 130, 20)
     
-    duration_mode = receipt.get('duration_mode', '')
-    details = receipt.get('duration_details', {})
-    year_val = details.get('year', '')
-    if year_val and '-' in str(year_val):
-        # shorten 2026-2027 to 2026-27
-        parts = str(year_val).split('-')
-        if len(parts) == 2 and len(parts[1]) == 4:
-            year_val = f"{parts[0]}-{parts[1][2:]}"
-
-    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    display_str = ""
-
-    if duration_mode == 'Monthly':
-        months = details.get('months', [])
-        m_str = ", ".join([month_names[int(m)-1] for m in months if str(m).isdigit() and 1 <= int(m) <= 12])
-        display_str = f"{m_str} {year_val}"
-    elif duration_mode in ['Quarterly', 'Six-Month']:
-        dtype = details.get('type', '')
-        if dtype == 'Custom':
-            months = details.get('months', [])
-            m_str = ", ".join([month_names[int(m)-1] for m in months if str(m).isdigit() and 1 <= int(m) <= 12])
-            display_str = f"{m_str} {year_val}"
-        else:
-            fy_start = int(society.get('financial_year_start_month', 4))
-            start_offset = 0
-            count = 0
-            if dtype == 'Q1': start_offset, count = 0, 3
-            elif dtype == 'Q2': start_offset, count = 3, 3
-            elif dtype == 'Q3': start_offset, count = 6, 3
-            elif dtype == 'Q4': start_offset, count = 9, 3
-            elif dtype == 'H1': start_offset, count = 0, 6
-            elif dtype == 'H2': start_offset, count = 6, 6
-            
-            if count > 0:
-                m1 = (fy_start - 1 + start_offset) % 12
-                m2 = (fy_start - 1 + start_offset + count - 1) % 12
-                display_str = f"{month_names[m1]}-{month_names[m2]} {year_val}"
-            else:
-                display_str = f"{dtype} {year_val}"
-    elif duration_mode == 'Yearly':
-        fy_start = int(society.get('financial_year_start_month', 4))
-        fy_m = month_names[fy_start - 1]
-        display_str = f"{fy_m} {year_val}"
-    else:
-        display_str = f"{duration_mode} {year_val}"
-        
-    display_str = display_str.strip()
+    display_str = build_duration_display(receipt, society).strip()
     if len(display_str) > 16:
         c.setFont("Helvetica", 9)
     else:
@@ -160,7 +162,7 @@ def generate_receipt_pdf(receipt, society):
     if dt_str:
         try:
             date_display = datetime.datetime.strptime(dt_str, "%Y-%m-%d").strftime("%d/%m/%Y")
-        except:
+        except ValueError:
             date_display = dt_str
     c.drawCentredString(right_col + 65, height - 84, date_display)
     

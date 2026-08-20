@@ -3,13 +3,36 @@ import re
 import datetime
 from functools import wraps
 
+from bson import ObjectId
+from bson.errors import InvalidId
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
-from pymongo import MongoClient, ASCENDING
+from pymongo import MongoClient, ASCENDING, ReturnDocument
 from pymongo.errors import PyMongoError, DuplicateKeyError
+
+
+EMAIL_RE = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+
+
+def normalize_mobile(mobile):
+    """Strip spaces, dashes and parens from a mobile number for comparison/storage."""
+    return mobile.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+
+
+def validate_mobile(mobile):
+    """Return an error string if the mobile number is invalid, else None."""
+    digits = normalize_mobile(mobile)
+    clean = digits[1:] if digits.startswith('+') else digits
+    if not clean.isdigit():
+        return 'Mobile number must contain only digits, spaces, dashes or a leading +.'
+    if not (7 <= len(clean) <= 15):
+        return 'Mobile number must be 7–15 digits.'
+    if not digits.startswith('+') and not digits.startswith('91') and len(clean) != 10:
+        return 'Indian mobile numbers must be exactly 10 digits.'
+    return None
 
 
 # ─────────────────────────────────────────────
@@ -348,20 +371,14 @@ def register_apartment_view(request):
         if not chairman_email:
             return JsonResponse({'success': False, 'error': 'Chairman Email is required.'}, status=400)
 
-        if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', chairman_email):
+        if not EMAIL_RE.match(chairman_email):
             return JsonResponse({'success': False, 'error': 'Chairman Email format is invalid.'}, status=400)
 
         # ── Optional: Mobile validation (if provided) ──────────────────────
         if chairman_mobile:
-            digits = chairman_mobile.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-            clean  = digits[1:] if digits.startswith('+') else digits
-            if not clean.isdigit():
-                return JsonResponse({'success': False, 'error': 'Mobile number must contain only digits, spaces, dashes or a leading +.'}, status=400)
-            if not (7 <= len(clean) <= 15):
-                return JsonResponse({'success': False, 'error': 'Mobile number must be 7–15 digits.'}, status=400)
-            # Indian number without country code: exactly 10 digits
-            if not digits.startswith('+') and not digits.startswith('91') and len(clean) != 10:
-                return JsonResponse({'success': False, 'error': 'Indian mobile numbers must be exactly 10 digits.'}, status=400)
+            mobile_error = validate_mobile(chairman_mobile)
+            if mobile_error:
+                return JsonResponse({'success': False, 'error': mobile_error}, status=400)
 
         # ── Total flats ────────────────────────────────────────────────────
         try:
@@ -397,7 +414,7 @@ def register_apartment_view(request):
 
         if chairman_mobile:
             # Normalise to digits-only for the duplicate check
-            norm_mobile = chairman_mobile.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            norm_mobile = normalize_mobile(chairman_mobile)
             if collection.find_one({'chairman_mobile': {'$in': [chairman_mobile, norm_mobile]}}):
                 return JsonResponse(
                     {'success': False, 'error': f'The mobile number "{chairman_mobile}" is already registered with another society.'},
@@ -475,27 +492,13 @@ def get_apartments_list_view(request):
     """
     try:
         collection = get_mongo_collection()
-        query = {'society_id': {'$exists': True}}
-        
-        # Optional search filter from query param
-        search_q = request.GET.get('q', '').strip()
-        if search_q:
-            regex_pat = re.compile(re.escape(search_q), re.IGNORECASE)
-            query['$or'] = [
-                {'society_name': regex_pat},
-                {'block': regex_pat},
-                {'address': regex_pat},
-                {'chairman_email': regex_pat},
-                {'society_id': regex_pat},
-            ]
 
-        cursor = collection.find(query)
-        apartments = []
+        # Single fetch of every registered apartment; stats are always computed
+        # over the full set, and the optional search filter narrows the list in Python.
         all_docs = list(collection.find({'society_id': {'$exists': True}}))
 
         unique_societies = set()
         unique_chairmen = set()
-
         for doc in all_docs:
             soc_name = doc.get('society_name', '')
             ch_email = doc.get('chairman_email', '')
@@ -504,8 +507,19 @@ def get_apartments_list_view(request):
             if ch_email:
                 unique_chairmen.add(ch_email)
 
-        for doc in cursor:
-            apartments.append({
+        search_q = request.GET.get('q', '').strip()
+        if search_q:
+            regex_pat = re.compile(re.escape(search_q), re.IGNORECASE)
+            search_fields = ('society_name', 'block', 'address', 'chairman_email', 'society_id')
+            matching_docs = [
+                doc for doc in all_docs
+                if any(regex_pat.search(str(doc.get(field, ''))) for field in search_fields)
+            ]
+        else:
+            matching_docs = all_docs
+
+        apartments = [
+            {
                 'id': str(doc['_id']),
                 'society_id': doc.get('society_id', ''),
                 'society_name': doc.get('society_name', ''),
@@ -518,7 +532,9 @@ def get_apartments_list_view(request):
                 'registered_at': doc.get('registered_at', ''),
                 'is_active': doc.get('is_active', True),  # default True for old records
                 'signature_image': doc.get('signature_image', ''),
-            })
+            }
+            for doc in matching_docs
+        ]
 
         # Sort apartments by society_id / registered_at descending
         apartments.sort(key=lambda x: x.get('registered_at', '') or x.get('society_id', ''), reverse=True)
@@ -564,19 +580,14 @@ def update_apartment_view(request, society_id):
             return JsonResponse({'success': False, 'error': 'Society / Company Name is required.'}, status=400)
         if not chairman_email:
             return JsonResponse({'success': False, 'error': 'Chairman Email is required.'}, status=400)
-        if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', chairman_email):
+        if not EMAIL_RE.match(chairman_email):
             return JsonResponse({'success': False, 'error': 'Chairman Email format is invalid.'}, status=400)
 
         # ── Optional: Mobile validation (if provided) ──────────────────────
         if chairman_mobile:
-            digits = chairman_mobile.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-            clean  = digits[1:] if digits.startswith('+') else digits
-            if not clean.isdigit():
-                return JsonResponse({'success': False, 'error': 'Mobile number must contain only digits, spaces, dashes or a leading +.'}, status=400)
-            if not (7 <= len(clean) <= 15):
-                return JsonResponse({'success': False, 'error': 'Mobile number must be 7–15 digits.'}, status=400)
-            if not digits.startswith('+') and not digits.startswith('91') and len(clean) != 10:
-                return JsonResponse({'success': False, 'error': 'Indian mobile numbers must be exactly 10 digits.'}, status=400)
+            mobile_error = validate_mobile(chairman_mobile)
+            if mobile_error:
+                return JsonResponse({'success': False, 'error': mobile_error}, status=400)
 
         # ── Total flats ────────────────────────────────────────────────────
         try:
@@ -601,7 +612,7 @@ def update_apartment_view(request, society_id):
                 return JsonResponse({'success': False, 'error': f'The email "{chairman_email}" is already registered with another society.'}, status=409)
 
         if chairman_mobile and chairman_mobile != doc.get('chairman_mobile'):
-            norm_mobile = chairman_mobile.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            norm_mobile = normalize_mobile(chairman_mobile)
             existing_mobile = collection.find_one({
                 'society_id': {'$ne': society_id},
                 'chairman_mobile': {'$in': [chairman_mobile, norm_mobile]}
@@ -685,7 +696,7 @@ def check_duplicate_view(request):
                 
         # Check Mobile
         if mobile:
-            norm_mobile = mobile.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+            norm_mobile = normalize_mobile(mobile)
             existing_mobile = collection.find_one({
                 'chairman_mobile': {'$in': [mobile, norm_mobile]}, 
                 'society_id': {'$exists': True}
@@ -773,8 +784,6 @@ def toggle_status_view(request, society_id):
 # ─────────────────────────────────────────────
 #  Member Management  (society chairman)
 # ─────────────────────────────────────────────
-
-from pymongo import ReturnDocument
 
 def get_next_member_id():
     """
@@ -864,9 +873,6 @@ def add_member_view(request):
 @require_http_methods(["DELETE"])
 def delete_member_view(request, member_id):
     """Delete a member from the 'user' collection by their MongoDB _id string."""
-    from bson import ObjectId
-    from bson.errors import InvalidId
-
     society_id = request.session.get('apartment_society_id', '')
 
     try:
